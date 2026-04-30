@@ -68,8 +68,20 @@ function updateStats() {
     setEl('p-def',        p.defense);
     setEl('p-spd',        p.speed.toFixed(2) + '/s');
     setEl('p-crit',       Math.round(p.critChance * 100) + '%');
-    setEl('p-total-gold', p.totalGold.toLocaleString());
+    setEl('p-total-gold',  p.totalGold.toLocaleString());
     setEl('p-total-kills', p.totalKills.toLocaleString());
+    setEl('p-time-alive',  fmtTime(p.timeAlive || 0));
+
+    const hpTimer = document.getElementById('hp-boost-timer');
+    if (hpTimer) {
+        const boost = state.buffs.hpBoost;
+        if (boost.active) {
+            hpTimer.style.display = '';
+            hpTimer.textContent   = `🧪 +${boost.bonus} HP boost: ${Math.ceil(boost.timeLeft)}s`;
+        } else {
+            hpTimer.style.display = 'none';
+        }
+    }
 }
 
 // ─── Equipment ───────────────────────────────────────────────────────────────
@@ -173,7 +185,7 @@ function updateDungeon() {
     const canAfford  = state.player.gold >= cost;
 
     setEl('d-floor',         d.floor);
-    setEl('d-kills',         `${d.kills} / ${KILLS_PER_FLOOR}`);
+    setEl('d-kills',         d.kills);
     setStyle('prog-fill',    'width', pct + '%');
     setEl('next-floor-num',  d.floor + 1);
 
@@ -226,6 +238,16 @@ function setEl(id, val) {
 function setStyle(id, prop, val) {
     const el = document.getElementById(id);
     if (el && el.style[prop] !== val) el.style[prop] = val;
+}
+
+function fmtTime(seconds) {
+    const s = Math.floor(seconds);
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    if (h > 0) return `${h}h ${m}m ${sec}s`;
+    if (m > 0) return `${m}m ${sec}s`;
+    return `${sec}s`;
 }
 
 function fmtStats(stats) {
@@ -290,6 +312,7 @@ function updateStore() {
     // Always update active buff timers
     const bs       = state.buffs;
     const active   = [];
+    if (bs.hpBoost.active)  active.push({ icon: '🧪', name: `Max HP +${bs.hpBoost.bonus}`, t: bs.hpBoost.timeLeft });
     if (bs.strength.active) active.push({ icon: '💪', name: 'Strength +50%', t: bs.strength.timeLeft });
     if (bs.poison.active)   active.push({ icon: '☠️', name: 'Poison Active', t: bs.poison.timeLeft });
     if (bs.fire.active)     active.push({ icon: '🔥', name: `Burn ${bs.fire.dps}/s`, t: bs.fire.timeLeft });

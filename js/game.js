@@ -9,7 +9,7 @@ function createState() {
             baseHp: 100, hp: 100,
             baseAtk: 10, baseDef: 3, baseSpd: 1.0, baseCrit: 0.05,
             critMult: 2.0,
-            gold: 0, totalGold: 0, totalKills: 0,
+            gold: 0, totalGold: 0, totalKills: 0, timeAlive: 0,
             equipment: { weapon: null, shield: null, armor: null, shoes: null, gloves: null, helmet: null },
             inventory: [],
             // derived
@@ -24,6 +24,7 @@ function createState() {
         anim: { floats: [], playerHit: 0, monsterHit: 0, playerX: 0, monsterX: 0 },
         ui:    { nextId: 1, sortMode: 'new', autosell: null },
         buffs: { strength: { active: false, timeLeft: 0 },
+                 hpBoost:  { active: false, timeLeft: 0, bonus: 0 },
                  poison:   { active: false, timeLeft: 0, tickTimer: 0 },
                  fire:     { active: false, timeLeft: 0, tickTimer: 0, dps: 0 } }
     };
@@ -38,6 +39,7 @@ function initGame() {
             state = JSON.parse(saved);
             if (!state.player.totalGold)   state.player.totalGold = 0;
             if (!state.player.totalKills)  state.player.totalKills = 0;
+            if (!state.player.timeAlive)   state.player.timeAlive = 0;
             if (!state.ui)                 state.ui = { nextId: 1000, sortMode: 'new', autosell: null };
             if (!('autosell' in state.ui)) state.ui.autosell = null;
             if (!state.anim)               state.anim = { floats: [], playerHit: 0, monsterHit: 0, playerX: 0, monsterX: 0 };
@@ -47,6 +49,7 @@ function initGame() {
             state.monster = null;
             // always reset buffs on load — they're temporary
             state.buffs = { strength: { active: false, timeLeft: 0 },
+                            hpBoost:  { active: false, timeLeft: 0, bonus: 0 },
                             poison:   { active: false, timeLeft: 0, tickTimer: 0 },
                             fire:     { active: false, timeLeft: 0, tickTimer: 0, dps: 0 } };
             recalcStats();
@@ -72,6 +75,7 @@ function gameLoop(ts) {
     requestAnimationFrame(gameLoop);          // schedule next frame first so errors can't kill the loop
     const dt = Math.min((ts - lastTime) / 1000, 0.1);
     lastTime = ts;
+    state.player.timeAlive += dt;
     updateCombat(dt);
     renderFrame(ts);
     updateUI();
@@ -101,6 +105,18 @@ function updateCombat(dt) {
         if (bs.strength.timeLeft <= 0) {
             bs.strength.active = false;
             addLog('💪 Strength potion wore off', 'system');
+        }
+    }
+
+    // Tick HP boost buff
+    if (bs.hpBoost.active) {
+        bs.hpBoost.timeLeft -= dt;
+        if (bs.hpBoost.timeLeft <= 0) {
+            bs.hpBoost.active = false;
+            state.player.baseHp -= bs.hpBoost.bonus;
+            recalcStats();
+            state.player.hp = Math.min(state.player.hp, state.player.maxHp);
+            addLog('🧪 HP boost wore off', 'system');
         }
     }
 
@@ -401,6 +417,9 @@ function advanceFloor() {
         addLog(`⚠️ Need ${cost.toLocaleString()}💰 to descend!`, 'system');
         return;
     }
+    if (state.player.level < state.dungeon.floor - 5) {
+        if (!confirm(`You're Level ${state.player.level} on Floor ${state.dungeon.floor} — this might be very dangerous. Descend anyway?`)) return;
+    }
     state.player.gold -= cost;
     state.dungeon.floor++;
     state.dungeon.kills      = 0;
@@ -529,13 +548,23 @@ function buyItem(itemId) {
     const cost = item.costBase + Math.floor(state.dungeon.floor * item.costPerFloor);
     if (state.player.gold < cost) { addLog('⚠️ Not enough gold!', 'system'); return; }
     state.player.gold -= cost;
+    const bs = state.buffs;
 
     switch (itemId) {
         case 'health_potion': {
-            const heal = Math.floor(state.player.maxHp * 0.40);
-            state.player.hp = Math.min(state.player.maxHp, state.player.hp + heal);
-            addLog(`🧪 Health potion! +${heal} HP`, 'player');
-            spawnFloat(0.22, 0.40, `+${heal}💚`, '#27ae60');
+            // Remove any existing hp boost first to avoid stacking
+            if (bs.hpBoost.active) {
+                state.player.baseHp -= bs.hpBoost.bonus;
+            }
+            const bonus = Math.floor(state.player.maxHp * 0.40);
+            state.player.baseHp   += bonus;
+            bs.hpBoost.active      = true;
+            bs.hpBoost.timeLeft    = 20;
+            bs.hpBoost.bonus       = bonus;
+            recalcStats();
+            state.player.hp = Math.min(state.player.maxHp, state.player.hp + bonus);
+            addLog(`🧪 Max HP +${bonus} for 20s! Healed ${bonus} HP`, 'levelup');
+            spawnFloat(0.22, 0.40, `+${bonus}❤️`, '#27ae60');
             break;
         }
         case 'strength_potion': {
