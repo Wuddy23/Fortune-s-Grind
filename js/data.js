@@ -3,7 +3,7 @@ const RARITIES = {
     uncommon:  { key: 'uncommon',  label: 'Uncommon',  color: '#1eff00', weight: 25, mult: 1.7  },
     rare:      { key: 'rare',      label: 'Rare',      color: '#2979ff', weight: 10, mult: 3.0  },
     epic:      { key: 'epic',      label: 'Epic',      color: '#aa44ee', weight: 4,  mult: 5.0  },
-    legendary: { key: 'legendary', label: 'Legendary', color: '#ff8800', weight: 1,  mult: 9.0  }
+    legendary: { key: 'legendary', label: 'Legendary', color: '#ff8800', weight: 0.2, mult: 9.0  }
 };
 
 const GEAR_TYPES = {

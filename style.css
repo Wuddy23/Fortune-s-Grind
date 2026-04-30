@@ -417,7 +417,6 @@ body {
     align-items: center;
     gap: 6px;
     margin-bottom: 4px;
-    padding-right: 52px;
 }
 
 .inv-icon { font-size: 0.95rem; }
@@ -460,12 +459,15 @@ body {
 .inv-stats { font-size: 0.7rem; color: var(--muted); }
 .inv-floor { font-size: 0.62rem; color: #40405a; margin-top: 2px; }
 
+.inv-item-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 7px;
+}
+
 .equip-btn {
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    padding: 6px 12px;
+    flex: 1;
+    padding: 7px 10px;
     background: #0a2035;
     border: 1px solid #1a4a6a;
     border-radius: 5px;
@@ -473,9 +475,25 @@ body {
     font-size: 0.72rem;
     font-weight: 600;
     cursor: pointer;
+    text-align: center;
 }
 
 .equip-btn:active { background: #0e2e48; }
+
+.sell-item-btn {
+    flex: 1;
+    padding: 7px 10px;
+    background: #1a1000;
+    border: 1px solid #4a3000;
+    border-radius: 5px;
+    color: #cc9900;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+}
+
+.sell-item-btn:active { background: #2e1800; }
 
 /* ─── DUNGEON TAB ─── */
 .dungeon-card {
