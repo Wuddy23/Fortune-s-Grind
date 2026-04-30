@@ -548,6 +548,7 @@ function buyItem(itemId) {
     const cost = item.costBase + Math.floor(state.dungeon.floor * item.costPerFloor);
     if (state.player.gold < cost) { addLog('⚠️ Not enough gold!', 'system'); return; }
     state.player.gold -= cost;
+    const bs = state.buffs;
 
     switch (itemId) {
         case 'health_potion': {
