@@ -59,6 +59,7 @@ function initGame() {
 
     spawnMonster();
     initRenderer();
+    canvas.addEventListener('pointerdown', onBattleClick);
     initUI();
     updateAutosellBtn();
     requestAnimationFrame(gameLoop);
@@ -568,6 +569,40 @@ function buyItem(itemId) {
             break;
         }
     }
+}
+
+// ─── Click Attack ─────────────────────────────────────────────────────────────
+
+function onBattleClick(e) {
+    if (!state || !state.monster || state.combat.paused) return;
+
+    const rect   = canvas.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
+
+    const sc        = CWIDTH / 560;
+    const mx        = CWIDTH  * 0.77 + state.anim.monsterX;
+    const my        = CHEIGHT * 0.70;
+    const s         = sc * (state.monster.type.sizeMult || 1.0);
+    const emojiSize = Math.round(62 * s);
+    const radius    = Math.max(32, 44 * sc);           // generous touch target
+    const cx        = mx;
+    const cy        = my - emojiSize * 0.5;
+
+    const dx = clickX - cx;
+    const dy = clickY - cy;
+    if (dx * dx + dy * dy <= radius * radius) doClickAttack();
+}
+
+function doClickAttack() {
+    const m   = state.monster;
+    const dmg = state.player.attack;                   // 100% ATK, no defense reduction
+    m.hp = Math.max(0, m.hp - dmg);
+    state.anim.monsterHit = 1;
+    state.anim.playerX    = 14;
+    spawnFloat(0.74, 0.42, `👊${dmg}`, '#ffe066');
+    addLog(`👊 You strike ${m.type.name} for ${dmg}!`, 'player');
+    if (m.hp <= 0) killMonster();
 }
 
 function setSortMode(mode) {

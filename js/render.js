@@ -280,7 +280,7 @@ function drawMonster(x, y, sc) {
     ctx.textBaseline = 'bottom';
     ctx.fillText(m.type.emoji, 0, 4);
 
-    // Name label below the monster
+    // Name label + tap hint below the monster
     ctx.filter = 'none';
     const nameSize = Math.max(10, Math.round(sc * 13));
     ctx.font         = `bold ${nameSize}px sans-serif`;
@@ -291,6 +291,14 @@ function drawMonster(x, y, sc) {
     ctx.strokeText(m.type.name, 0, 20);
     ctx.fillStyle    = '#e0e0ff';
     ctx.fillText(m.type.name, 0, 20);
+
+    const hintSize = Math.max(8, Math.round(sc * 10));
+    ctx.font      = `${hintSize}px sans-serif`;
+    ctx.fillStyle = 'rgba(255,255,255,0.28)';
+    ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+    ctx.lineWidth = 2;
+    ctx.strokeText('👊 tap to attack', 0, 20 + nameSize + 3);
+    ctx.fillText('👊 tap to attack', 0, 20 + nameSize + 3);
 
     ctx.restore();
 }
