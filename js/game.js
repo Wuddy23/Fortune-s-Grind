@@ -92,11 +92,13 @@ function updateCombat(dt) {
         if (c.pauseTimer <= 0) {
             c.paused = false;
             if (c.playerDead) {
-                c.playerDead = false;
-                state.player.hp = Math.floor(state.player.maxHp * 0.55);
-                addLog('You rise again, wounded...', 'system');
+                c.playerDead      = false;
+                state.player.hp   = state.player.maxHp;
+                c.playerTimer     = 0.5;
+                c.monsterTimer    = 1.5;
+                addLog('You rise again at full strength!', 'system');
             }
-            spawnMonster();
+            if (!state.monster) spawnMonster();
         }
         return;
     }
@@ -203,7 +205,6 @@ function killMonster() {
 
 function playerDied() {
     state.player.hp         = 0;
-    state.monster           = null;
     state.combat.paused     = true;
     state.combat.playerDead = true;
     state.combat.pauseTimer = 3.0;
