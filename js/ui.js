@@ -132,6 +132,7 @@ function updateInventory() {
     for (const item of sorted) {
         const equipped   = state.player.equipment[item.typeKey];
         const upgrade    = isUpgrade(item, equipped);
+        const sellGold   = Math.max(1, Math.floor(item.floor * SELL_MULTS[item.rarity]));
         const div        = document.createElement('div');
         div.className    = `inv-item rarity-border-${item.rarity}`;
         div.innerHTML    =
@@ -143,7 +144,10 @@ function updateInventory() {
             `</div>` +
             `<div class="inv-stats">${fmtStats(item.stats)}</div>` +
             `<div class="inv-floor">Dropped on floor ${item.floor}</div>` +
-            `<button class="equip-btn" data-id="${item.id}">Equip</button>`;
+            `<div class="inv-item-actions">` +
+                `<button class="equip-btn" data-id="${item.id}">Equip</button>` +
+                `<button class="sell-item-btn" data-id="${item.id}">Sell ${sellGold}💰</button>` +
+            `</div>`;
         frag.appendChild(div);
     }
 
@@ -155,6 +159,13 @@ function updateInventory() {
             e.stopPropagation();
             equipItem(parseInt(btn.dataset.id));
             lastInvLen = -1; // force re-render
+        });
+    });
+
+    list.querySelectorAll('.sell-item-btn').forEach(btn => {
+        btn.addEventListener('click', e => {
+            e.stopPropagation();
+            sellItem(parseInt(btn.dataset.id));
         });
     });
 }

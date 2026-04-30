@@ -250,7 +250,7 @@ function rollRarity(floor) {
         uncommon:  25 + bonus * 0.3,
         rare:      10 + bonus * 0.65,
         epic:       4 + bonus * 0.35,
-        legendary:  1 + bonus * 0.20
+        legendary:  0.2 + bonus * 0.06
     };
     const total = Object.values(w).reduce((a, b) => a + b, 0);
     let r = Math.random() * total;
@@ -346,7 +346,7 @@ function spawnFloat(xFrac, yFrac, text, color) {
 // ─── Sell Menu ───────────────────────────────────────────────────────────────
 
 const RARITY_SELL_ORDER = ['common', 'uncommon', 'rare', 'epic'];
-const SELL_MULTS = { common: 2, uncommon: 6, rare: 18, epic: 50 };
+const SELL_MULTS = { common: 2, uncommon: 6, rare: 18, epic: 50, legendary: 120 };
 
 function toggleSellMenu() {
     const overlay = document.getElementById('sell-overlay');
@@ -396,6 +396,18 @@ function sellUpTo(maxRarity) {
 
 function closeSellMenu() {
     document.getElementById('sell-overlay')?.classList.add('hidden');
+}
+
+function sellItem(itemId) {
+    const inv = state.player.inventory;
+    const idx = inv.findIndex(i => i.id === itemId);
+    if (idx === -1) return;
+    const item = inv[idx];
+    const gold = Math.max(1, Math.floor(item.floor * SELL_MULTS[item.rarity]));
+    inv.splice(idx, 1);
+    state.player.gold      += gold;
+    state.player.totalGold += gold;
+    addLog(`Sold ${GEAR_TYPES[item.typeKey].icon} ${item.name} for ${gold}💰`, 'gold');
 }
 
 function setSortMode(mode) {
