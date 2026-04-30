@@ -143,6 +143,33 @@ const MONSTERS = [
 const KILLS_PER_FLOOR  = 10;
 const GEAR_DROP_CHANCE = 0.28;
 
+const STORE_ITEMS = [
+    {
+        id: 'health_potion',
+        name: 'Health Potion',
+        icon: '🧪',
+        desc: 'Instantly restore 40% of max HP',
+        costBase: 5,
+        costPerFloor: 8
+    },
+    {
+        id: 'strength_potion',
+        name: 'Strength Potion',
+        icon: '💪',
+        desc: '+50% attack for 45 seconds',
+        costBase: 10,
+        costPerFloor: 12
+    },
+    {
+        id: 'poison_flask',
+        name: 'Poison Flask',
+        icon: '☠️',
+        desc: 'Poisons enemy: 5% max HP/s for 8s',
+        costBase: 8,
+        costPerFloor: 10
+    }
+];
+
 // XP required to advance from level N (index N-1)
 const XP_TABLE = (() => {
     const t = [];

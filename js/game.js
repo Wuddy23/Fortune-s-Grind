@@ -22,7 +22,9 @@ function createState() {
             paused: false, pauseTimer: 0, playerDead: false
         },
         anim: { floats: [], playerHit: 0, monsterHit: 0, playerX: 0, monsterX: 0 },
-        ui: { nextId: 1, sortMode: 'new', autosell: null }
+        ui:    { nextId: 1, sortMode: 'new', autosell: null },
+        buffs: { strength: { active: false, timeLeft: 0 },
+                 poison:   { active: false, timeLeft: 0, tickTimer: 0 } }
     };
 }
 
@@ -42,6 +44,9 @@ function initGame() {
             state.combat.playerDead = false;
             state.combat.pauseTimer = 0;
             state.monster = null;
+            // always reset buffs on load — they're temporary
+            state.buffs = { strength: { active: false, timeLeft: 0 },
+                            poison:   { active: false, timeLeft: 0, tickTimer: 0 } };
             recalcStats();
         } catch (_) {
             state = createState();
@@ -86,6 +91,16 @@ function updateCombat(dt) {
         return f.life > 0;
     });
 
+    // Tick strength buff (counts down in real time)
+    const bs = state.buffs;
+    if (bs.strength.active) {
+        bs.strength.timeLeft -= dt;
+        if (bs.strength.timeLeft <= 0) {
+            bs.strength.active = false;
+            addLog('💪 Strength potion wore off', 'system');
+        }
+    }
+
     // Between-fight or death pause
     if (c.paused) {
         c.pauseTimer -= dt;
@@ -104,6 +119,25 @@ function updateCombat(dt) {
     }
 
     if (!state.monster) return;
+
+    // Tick poison (only while an enemy is alive)
+    if (bs.poison.active) {
+        bs.poison.timeLeft  -= dt;
+        bs.poison.tickTimer -= dt;
+        if (bs.poison.tickTimer <= 0) {
+            bs.poison.tickTimer = 1.0;
+            const pdmg = Math.max(1, Math.ceil(state.monster.maxHp * 0.05));
+            state.monster.hp = Math.max(0, state.monster.hp - pdmg);
+            state.anim.monsterHit = 0.6;
+            spawnFloat(0.74, 0.38, `-${pdmg}☠️`, '#2ecc71');
+            addLog(`☠️ Poison: ${state.monster.type.name} -${pdmg}`, 'crit');
+            if (state.monster.hp <= 0) { killMonster(); return; }
+        }
+        if (bs.poison.timeLeft <= 0) {
+            bs.poison.active = false;
+            addLog('☠️ Poison wore off', 'system');
+        }
+    }
 
     c.playerTimer -= dt;
     if (c.playerTimer <= 0) {
@@ -125,7 +159,8 @@ function doPlayerAttack() {
     const m = state.monster;
     if (!m) return;
 
-    let dmg = Math.max(1, Math.floor((p.attack - m.defense) * (0.8 + Math.random() * 0.4)));
+    const atkPower = state.buffs.strength.active ? Math.floor(p.attack * 1.5) : p.attack;
+    let dmg = Math.max(1, Math.floor((atkPower - m.defense) * (0.8 + Math.random() * 0.4)));
     dmg = Math.max(1, dmg);
     const isCrit = Math.random() < p.critChance;
     if (isCrit) dmg = Math.floor(dmg * p.critMult);
@@ -463,6 +498,39 @@ function sellItem(itemId) {
     state.player.gold      += gold;
     state.player.totalGold += gold;
     addLog(`Sold ${GEAR_TYPES[item.typeKey].icon} ${item.name} for ${gold}💰`, 'gold');
+}
+
+// ─── Store ────────────────────────────────────────────────────────────────────
+
+function buyItem(itemId) {
+    const item = STORE_ITEMS.find(i => i.id === itemId);
+    if (!item) return;
+    const cost = item.costBase + Math.floor(state.dungeon.floor * item.costPerFloor);
+    if (state.player.gold < cost) { addLog('⚠️ Not enough gold!', 'system'); return; }
+    state.player.gold -= cost;
+
+    switch (itemId) {
+        case 'health_potion': {
+            const heal = Math.floor(state.player.maxHp * 0.40);
+            state.player.hp = Math.min(state.player.maxHp, state.player.hp + heal);
+            addLog(`🧪 Health potion! +${heal} HP`, 'player');
+            spawnFloat(0.22, 0.40, `+${heal}💚`, '#27ae60');
+            break;
+        }
+        case 'strength_potion': {
+            state.buffs.strength.active   = true;
+            state.buffs.strength.timeLeft = 45;
+            addLog('💪 Strength potion! +50% ATK for 45s', 'levelup');
+            break;
+        }
+        case 'poison_flask': {
+            state.buffs.poison.active    = true;
+            state.buffs.poison.timeLeft  = 8;
+            state.buffs.poison.tickTimer = 0;
+            addLog('☠️ Poison flask thrown!', 'crit');
+            break;
+        }
+    }
 }
 
 function setSortMode(mode) {
