@@ -141,7 +141,7 @@ const MONSTERS = [
 ];
 
 const KILLS_PER_FLOOR  = 10;
-const GEAR_DROP_CHANCE = 0.28;
+const GEAR_DROP_CHANCE = 0.45;
 
 // XP required to advance from level N (index N-1)
 const XP_TABLE = (() => {
