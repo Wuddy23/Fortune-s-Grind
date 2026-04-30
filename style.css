@@ -281,7 +281,7 @@ body {
 
 .sort-btn.active { background: #242448; color: var(--text); border-color: #4a4a78; }
 
-#sell-junk-btn {
+#autosell-btn {
     padding: 4px 10px;
     font-size: 0.7rem;
     background: #1a1000;
@@ -289,6 +289,11 @@ body {
     border-radius: 5px;
     color: #cc9900;
     cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+}
+
+.autosell-active {
+    background: #1e1e3a !important;
 }
 
 /* ─── SELL BOTTOM SHEET ─── */

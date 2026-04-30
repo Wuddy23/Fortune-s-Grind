@@ -22,7 +22,7 @@ function createState() {
             paused: false, pauseTimer: 0, playerDead: false
         },
         anim: { floats: [], playerHit: 0, monsterHit: 0, playerX: 0, monsterX: 0 },
-        ui: { nextId: 1, sortMode: 'new' }
+        ui: { nextId: 1, sortMode: 'new', autosell: null }
     };
 }
 
@@ -35,7 +35,8 @@ function initGame() {
             state = JSON.parse(saved);
             if (!state.player.totalGold)   state.player.totalGold = 0;
             if (!state.player.totalKills)  state.player.totalKills = 0;
-            if (!state.ui)                 state.ui = { nextId: 1000, sortMode: 'new' };
+            if (!state.ui)                 state.ui = { nextId: 1000, sortMode: 'new', autosell: null };
+            if (!('autosell' in state.ui)) state.ui.autosell = null;
             if (!state.anim)               state.anim = { floats: [], playerHit: 0, monsterHit: 0, playerX: 0, monsterX: 0 };
             state.combat.paused = false;
             state.combat.playerDead = false;
@@ -52,6 +53,7 @@ function initGame() {
     spawnMonster();
     initRenderer();
     initUI();
+    updateAutosellBtn();
     requestAnimationFrame(gameLoop);
     setInterval(saveGame, 30000);
 }
@@ -170,10 +172,19 @@ function killMonster() {
 
     // Gear drop
     if (Math.random() < GEAR_DROP_CHANCE) {
-        const item    = generateGear(floor);
-        state.player.inventory.push(item);
-        const logType = { legendary: 'legendary', epic: 'epic', rare: 'rare' }[item.rarity] || 'loot';
-        addLog(`🎁 ${GEAR_TYPES[item.typeKey].icon} ${item.name} [${RARITIES[item.rarity].label}]`, logType);
+        const item     = generateGear(floor);
+        const maxIdx   = state.ui.autosell ? RARITY_SELL_ORDER.indexOf(state.ui.autosell) : -1;
+        const itemIdx  = RARITY_SELL_ORDER.indexOf(item.rarity); // -1 for legendary (never auto-sold)
+        if (maxIdx >= 0 && itemIdx >= 0 && itemIdx <= maxIdx) {
+            const gold = Math.max(1, Math.floor(item.floor * SELL_MULTS[item.rarity]));
+            state.player.gold      += gold;
+            state.player.totalGold += gold;
+            addLog(`⚡ Auto-sold ${GEAR_TYPES[item.typeKey].icon} ${item.name} +${gold}💰`, 'gold');
+        } else {
+            state.player.inventory.push(item);
+            const logType = { legendary: 'legendary', epic: 'epic', rare: 'rare' }[item.rarity] || 'loot';
+            addLog(`🎁 ${GEAR_TYPES[item.typeKey].icon} ${item.name} [${RARITIES[item.rarity].label}]`, logType);
+        }
     }
 
     // XP
@@ -343,59 +354,70 @@ function spawnFloat(xFrac, yFrac, text, color) {
     state.anim.floats.push({ xFrac, yFrac, text, color, life: 1.3, y: 0 });
 }
 
-// ─── Sell Menu ───────────────────────────────────────────────────────────────
+// ─── Autosell ────────────────────────────────────────────────────────────────
 
 const RARITY_SELL_ORDER = ['common', 'uncommon', 'rare', 'epic'];
 const SELL_MULTS = { common: 2, uncommon: 6, rare: 18, epic: 50, legendary: 120 };
 
-function toggleSellMenu() {
+function toggleAutosellMenu() {
     const overlay = document.getElementById('sell-overlay');
     if (overlay.classList.contains('hidden')) {
-        buildSellMenu();
+        buildAutosellMenu();
         overlay.classList.remove('hidden');
     } else {
         overlay.classList.add('hidden');
     }
 }
 
-function buildSellMenu() {
-    const sheet  = document.getElementById('sell-menu');
-    const inv    = state.player.inventory;
-    let html     = '<div class="sell-handle"></div><div class="sell-menu-title">Sell items up to rarity…</div>';
-    let cumItems = 0, cumGold = 0;
+function buildAutosellMenu() {
+    const sheet   = document.getElementById('sell-menu');
+    const current = state.ui.autosell;
+    let html = '<div class="sell-handle"></div><div class="sell-menu-title">Auto-sell threshold</div>';
+
+    html +=
+        `<button class="sell-option${!current ? ' autosell-active' : ''}" onclick="setAutosell(null)">` +
+            `<span class="sell-rarity" style="color:var(--muted)">${!current ? '✓ ' : ''}Off</span>` +
+            `<span class="sell-info">Keep all drops</span>` +
+        `</button>`;
 
     for (const rarity of RARITY_SELL_ORDER) {
-        const items = inv.filter(i => i.rarity === rarity);
-        const gold  = items.reduce((s, i) => s + Math.max(1, Math.floor(i.floor * SELL_MULTS[rarity])), 0);
-        cumItems += items.length;
-        cumGold  += gold;
-        const col      = RARITIES[rarity].color;
-        const disabled = cumItems === 0 ? 'disabled' : '';
+        const active = current === rarity;
+        const col    = RARITIES[rarity].color;
         html +=
-            `<button class="sell-option" ${disabled} onclick="sellUpTo('${rarity}')" style="border-color:${col}33">` +
-                `<span class="sell-rarity" style="color:${col}">${RARITIES[rarity].label}</span>` +
-                `<span class="sell-info">${cumItems} item${cumItems !== 1 ? 's' : ''} · +${cumGold}💰</span>` +
+            `<button class="sell-option${active ? ' autosell-active' : ''}" onclick="setAutosell('${rarity}')" style="border-color:${col}44">` +
+                `<span class="sell-rarity" style="color:${col}">${active ? '✓ ' : ''}≤ ${RARITIES[rarity].label}</span>` +
+                `<span class="sell-info">Auto-sell ${RARITIES[rarity].label} and below</span>` +
             `</button>`;
     }
 
-    html += '<button class="sell-cancel" onclick="closeSellMenu()">Cancel</button>';
+    html += '<button class="sell-cancel" onclick="closeAutosellMenu()">Cancel</button>';
     sheet.innerHTML = html;
 }
 
-function sellUpTo(maxRarity) {
-    const maxIdx = RARITY_SELL_ORDER.indexOf(maxRarity);
-    const toSell = state.player.inventory.filter(i => RARITY_SELL_ORDER.indexOf(i.rarity) <= maxIdx);
-    if (!toSell.length) { closeSellMenu(); return; }
-    const gold = toSell.reduce((s, i) => s + Math.max(1, Math.floor(i.floor * SELL_MULTS[i.rarity])), 0);
-    state.player.inventory = state.player.inventory.filter(i => RARITY_SELL_ORDER.indexOf(i.rarity) > maxIdx);
-    state.player.gold      += gold;
-    state.player.totalGold += gold;
-    addLog(`Sold ${toSell.length} items for ${gold}💰`, 'gold');
-    closeSellMenu();
+function setAutosell(rarity) {
+    state.ui.autosell = rarity;
+    updateAutosellBtn();
+    closeAutosellMenu();
+    addLog(`⚡ Autosell: ${rarity ? '≤ ' + RARITIES[rarity].label : 'Off'}`, 'system');
 }
 
-function closeSellMenu() {
+function closeAutosellMenu() {
     document.getElementById('sell-overlay')?.classList.add('hidden');
+}
+
+function updateAutosellBtn() {
+    const btn = document.getElementById('autosell-btn');
+    if (!btn) return;
+    const r = state.ui.autosell;
+    if (r) {
+        btn.textContent    = `⚡ ≤${RARITIES[r].label}`;
+        btn.style.color    = RARITIES[r].color;
+        btn.style.borderColor = RARITIES[r].color + '99';
+    } else {
+        btn.textContent    = '⚡ Autosell';
+        btn.style.color    = '';
+        btn.style.borderColor = '';
+    }
 }
 
 function sellItem(itemId) {
