@@ -173,7 +173,7 @@ function updateDungeon() {
     const canAfford  = state.player.gold >= cost;
 
     setEl('d-floor',         d.floor);
-    setEl('d-kills',         `${d.kills} / ${KILLS_PER_FLOOR}`);
+    setEl('d-kills',         d.kills);
     setStyle('prog-fill',    'width', pct + '%');
     setEl('next-floor-num',  d.floor + 1);
 
