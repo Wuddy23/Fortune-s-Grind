@@ -71,6 +71,17 @@ function updateStats() {
     setEl('p-total-gold',  p.totalGold.toLocaleString());
     setEl('p-total-kills', p.totalKills.toLocaleString());
     setEl('p-time-alive',  fmtTime(p.timeAlive || 0));
+
+    const hpTimer = document.getElementById('hp-boost-timer');
+    if (hpTimer) {
+        const boost = state.buffs.hpBoost;
+        if (boost.active) {
+            hpTimer.style.display = '';
+            hpTimer.textContent   = `🧪 +${boost.bonus} HP boost: ${Math.ceil(boost.timeLeft)}s`;
+        } else {
+            hpTimer.style.display = 'none';
+        }
+    }
 }
 
 // ─── Equipment ───────────────────────────────────────────────────────────────

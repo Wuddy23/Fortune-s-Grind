@@ -561,7 +561,8 @@ function buyItem(itemId) {
             bs.hpBoost.timeLeft    = 20;
             bs.hpBoost.bonus       = bonus;
             recalcStats();
-            addLog(`🧪 Max HP +${bonus} for 20s! (now ${state.player.maxHp})`, 'levelup');
+            state.player.hp = Math.min(state.player.maxHp, state.player.hp + bonus);
+            addLog(`🧪 Max HP +${bonus} for 20s! Healed ${bonus} HP`, 'levelup');
             spawnFloat(0.22, 0.40, `+${bonus}❤️`, '#27ae60');
             break;
         }

@@ -172,6 +172,13 @@ body {
     margin-top: 2px;
 }
 
+.hp-boost-timer {
+    font-size: 0.68rem;
+    color: #2ecc71;
+    text-align: right;
+    margin-top: 1px;
+}
+
 /* ─── STATS TAB ─── */
 .stat-block {
     background: var(--card);
