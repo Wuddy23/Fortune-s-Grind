@@ -334,12 +334,22 @@ function gainXP(amount) {
 
 // ─── Dungeon ─────────────────────────────────────────────────────────────────
 
+function floorDescendCost(floor) {
+    return Math.floor(floor * floor / 2 + floor * 10);
+}
+
 function advanceFloor() {
     if (!state.dungeon.canAdvance) return;
+    const cost = floorDescendCost(state.dungeon.floor);
+    if (state.player.gold < cost) {
+        addLog(`⚠️ Need ${cost.toLocaleString()}💰 to descend!`, 'system');
+        return;
+    }
+    state.player.gold -= cost;
     state.dungeon.floor++;
     state.dungeon.kills      = 0;
     state.dungeon.canAdvance = false;
-    addLog(`⬇️ Descending to Floor ${state.dungeon.floor}...`, 'system');
+    addLog(`⬇️ Descending to Floor ${state.dungeon.floor}... (-${cost.toLocaleString()}💰)`, 'system');
     spawnMonster();
 }
 

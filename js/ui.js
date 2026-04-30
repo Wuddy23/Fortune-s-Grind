@@ -164,16 +164,24 @@ function updateInventory() {
 // ─── Dungeon Panel ───────────────────────────────────────────────────────────
 
 function updateDungeon() {
-    const d   = state.dungeon;
-    const m   = state.monster;
-    const pct = Math.min(100, (d.kills / KILLS_PER_FLOOR) * 100);
+    const d          = state.dungeon;
+    const m          = state.monster;
+    const pct        = Math.min(100, (d.kills / KILLS_PER_FLOOR) * 100);
+    const cost       = floorDescendCost(d.floor);
+    const canAfford  = state.player.gold >= cost;
 
     setEl('d-floor',         d.floor);
     setEl('d-kills',         `${d.kills} / ${KILLS_PER_FLOOR}`);
     setStyle('prog-fill',    'width', pct + '%');
     setEl('next-floor-num',  d.floor + 1);
 
-    document.getElementById('advance-btn').disabled = !d.canAdvance;
+    const costEl = document.getElementById('descend-cost');
+    if (costEl) {
+        costEl.textContent = cost.toLocaleString() + '💰';
+        costEl.style.color = d.canAdvance && !canAfford ? '#e74c3c' : '';
+    }
+
+    document.getElementById('advance-btn').disabled = !d.canAdvance || !canAfford;
 
     if (m) {
         setEl('d-monster-name', `${m.type.emoji} ${m.type.name}`);
