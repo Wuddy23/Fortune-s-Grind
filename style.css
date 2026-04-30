@@ -78,31 +78,6 @@ body {
     flex-shrink: 0;
 }
 
-#monster-nameplate {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    padding: 5px 10px;
-    pointer-events: none;
-    z-index: 2;
-}
-
-#monster-name {
-    font-size: 0.78rem;
-    font-weight: bold;
-    color: #e0e0ff;
-    text-shadow: 0 1px 3px #000, 0 0 8px #000;
-}
-
-#monster-hp-text {
-    font-size: 0.72rem;
-    color: #e74c3c;
-    text-shadow: 0 1px 2px #000;
-}
 
 #battle-canvas {
     display: block;
@@ -306,7 +281,7 @@ body {
 
 .sort-btn.active { background: #242448; color: var(--text); border-color: #4a4a78; }
 
-#sell-junk-btn {
+#autosell-btn {
     padding: 4px 10px;
     font-size: 0.7rem;
     background: #1a1000;
@@ -314,6 +289,11 @@ body {
     border-radius: 5px;
     color: #cc9900;
     cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+}
+
+.autosell-active {
+    background: #1e1e3a !important;
 }
 
 /* ─── SELL BOTTOM SHEET ─── */
@@ -559,3 +539,72 @@ body {
 
 .action-btn:active { background: #1e1e3a; }
 .danger-btn { color: #e74c3c; border-color: #4a1010; }
+
+/* ─── STORE TAB ─── */
+.store-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 13px 14px;
+    margin-bottom: 9px;
+    display: flex;
+    align-items: center;
+    gap: 13px;
+}
+
+.store-icon { font-size: 2rem; line-height: 1; flex-shrink: 0; }
+
+.store-info { flex: 1; min-width: 0; }
+
+.store-name {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 3px;
+}
+
+.store-desc { font-size: 0.7rem; color: var(--muted); }
+
+.store-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.store-price { font-size: 0.8rem; font-weight: 700; color: var(--gold); }
+
+.store-buy-btn {
+    padding: 7px 18px;
+    background: linear-gradient(135deg, #1a3a1a, #2a5a2a);
+    border: 1px solid #3a8a3a;
+    border-radius: 6px;
+    color: #5dfc5d;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.store-buy-btn:disabled {
+    background: #16162a;
+    border-color: var(--border);
+    color: var(--muted);
+    cursor: not-allowed;
+}
+
+.store-buy-btn:not(:disabled):active { opacity: 0.8; }
+
+.buff-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    font-size: 0.82rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.buff-row:last-child { border-bottom: none; }
+
+.buff-name { color: var(--text); }
+.buff-timer { color: var(--gold); font-weight: 700; }

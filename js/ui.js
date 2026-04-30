@@ -2,6 +2,7 @@ let lastLogMsg = '';
 let lastInvLen = -1;
 let lastInvSort = '';
 let lastEquipHash = '';
+let lastStoreKey = '';
 
 // ─── Init ────────────────────────────────────────────────────────────────────
 
@@ -33,11 +34,11 @@ function initUI() {
 
 function updateUI() {
     updateHeader();
-    updateNameplate();
     updateStats();
     updateEquipment();
     updateInventory();
     updateDungeon();
+    updateStore();
     updateLog();
 }
 
@@ -46,14 +47,6 @@ function updateUI() {
 function updateHeader() {
     document.getElementById('gold-val').textContent  = state.player.gold.toLocaleString();
     document.getElementById('floor-val').textContent = state.dungeon.floor;
-}
-
-// ─── Nameplate ───────────────────────────────────────────────────────────────
-
-function updateNameplate() {
-    const m = state.monster;
-    document.getElementById('monster-name').textContent    = m ? `${m.type.emoji} ${m.type.name}` : (state.combat.paused ? '...' : '—');
-    document.getElementById('monster-hp-text').textContent = m ? `${m.hp} / ${m.maxHp} HP` : '';
 }
 
 // ─── Player Stats ─────────────────────────────────────────────────────────────
@@ -173,16 +166,24 @@ function updateInventory() {
 // ─── Dungeon Panel ───────────────────────────────────────────────────────────
 
 function updateDungeon() {
-    const d   = state.dungeon;
-    const m   = state.monster;
-    const pct = Math.min(100, (d.kills / KILLS_PER_FLOOR) * 100);
+    const d          = state.dungeon;
+    const m          = state.monster;
+    const pct        = Math.min(100, (d.kills / KILLS_PER_FLOOR) * 100);
+    const cost       = floorDescendCost(d.floor);
+    const canAfford  = state.player.gold >= cost;
 
     setEl('d-floor',         d.floor);
     setEl('d-kills',         `${d.kills} / ${KILLS_PER_FLOOR}`);
     setStyle('prog-fill',    'width', pct + '%');
     setEl('next-floor-num',  d.floor + 1);
 
-    document.getElementById('advance-btn').disabled = !d.canAdvance;
+    const costEl = document.getElementById('descend-cost');
+    if (costEl) {
+        costEl.textContent = cost.toLocaleString() + '💰';
+        costEl.style.color = !canAfford ? '#e74c3c' : '';
+    }
+
+    document.getElementById('advance-btn').disabled = !canAfford;
 
     if (m) {
         setEl('d-monster-name', `${m.type.emoji} ${m.type.name}`);
@@ -246,4 +247,62 @@ function isUpgrade(item, equipped) {
         (s.speed      || 0) * 25  +
         (s.critChance || 0) * 100;
     return score(item.stats) > score(equipped.stats);
+}
+
+// ─── Store ────────────────────────────────────────────────────────────────────
+
+function updateStore() {
+    const floor = state.dungeon.floor;
+    const gold  = state.player.gold;
+
+    // Rebuild item cards only when floor or affordability changes
+    const affordBits = STORE_ITEMS.map(i => gold >= i.costBase + Math.floor(floor * i.costPerFloor) ? 1 : 0).join('');
+    const storeKey   = `${floor}:${affordBits}`;
+    if (storeKey !== lastStoreKey) {
+        lastStoreKey = storeKey;
+        const list = document.getElementById('store-items');
+        if (list) {
+            const frag = document.createDocumentFragment();
+            for (const item of STORE_ITEMS) {
+                const cost = item.costBase + Math.floor(floor * item.costPerFloor);
+                const div  = document.createElement('div');
+                div.className = 'store-card';
+                div.innerHTML =
+                    `<div class="store-icon">${item.icon}</div>` +
+                    `<div class="store-info">` +
+                        `<div class="store-name">${item.name}</div>` +
+                        `<div class="store-desc">${item.desc}</div>` +
+                    `</div>` +
+                    `<div class="store-right">` +
+                        `<div class="store-price">${cost.toLocaleString()}💰</div>` +
+                        `<button class="store-buy-btn" data-id="${item.id}" ${gold >= cost ? '' : 'disabled'}>Buy</button>` +
+                    `</div>`;
+                frag.appendChild(div);
+            }
+            list.innerHTML = '';
+            list.appendChild(frag);
+            list.querySelectorAll('.store-buy-btn').forEach(btn => {
+                btn.addEventListener('click', () => buyItem(btn.dataset.id));
+            });
+        }
+    }
+
+    // Always update active buff timers
+    const bs       = state.buffs;
+    const active   = [];
+    if (bs.strength.active) active.push({ icon: '💪', name: 'Strength +50%', t: bs.strength.timeLeft });
+    if (bs.poison.active)   active.push({ icon: '☠️', name: 'Poison Active', t: bs.poison.timeLeft });
+    if (bs.fire.active)     active.push({ icon: '🔥', name: `Burn ${bs.fire.dps}/s`, t: bs.fire.timeLeft });
+
+    const card = document.getElementById('active-buffs-card');
+    const list2 = document.getElementById('buff-list');
+    if (card && list2) {
+        card.style.display = active.length ? '' : 'none';
+        list2.innerHTML = active.map(b =>
+            `<div class="buff-row">` +
+                `<span class="buff-name">${b.icon} ${b.name}</span>` +
+                `<span class="buff-timer">${Math.ceil(b.t)}s</span>` +
+            `</div>`
+        ).join('');
+    }
 }

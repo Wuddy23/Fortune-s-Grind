@@ -22,7 +22,10 @@ function createState() {
             paused: false, pauseTimer: 0, playerDead: false
         },
         anim: { floats: [], playerHit: 0, monsterHit: 0, playerX: 0, monsterX: 0 },
-        ui: { nextId: 1, sortMode: 'new' }
+        ui:    { nextId: 1, sortMode: 'new', autosell: null },
+        buffs: { strength: { active: false, timeLeft: 0 },
+                 poison:   { active: false, timeLeft: 0, tickTimer: 0 },
+                 fire:     { active: false, timeLeft: 0, tickTimer: 0, dps: 0 } }
     };
 }
 
@@ -35,12 +38,17 @@ function initGame() {
             state = JSON.parse(saved);
             if (!state.player.totalGold)   state.player.totalGold = 0;
             if (!state.player.totalKills)  state.player.totalKills = 0;
-            if (!state.ui)                 state.ui = { nextId: 1000, sortMode: 'new' };
+            if (!state.ui)                 state.ui = { nextId: 1000, sortMode: 'new', autosell: null };
+            if (!('autosell' in state.ui)) state.ui.autosell = null;
             if (!state.anim)               state.anim = { floats: [], playerHit: 0, monsterHit: 0, playerX: 0, monsterX: 0 };
             state.combat.paused = false;
             state.combat.playerDead = false;
             state.combat.pauseTimer = 0;
             state.monster = null;
+            // always reset buffs on load — they're temporary
+            state.buffs = { strength: { active: false, timeLeft: 0 },
+                            poison:   { active: false, timeLeft: 0, tickTimer: 0 },
+                            fire:     { active: false, timeLeft: 0, tickTimer: 0, dps: 0 } };
             recalcStats();
         } catch (_) {
             state = createState();
@@ -51,7 +59,9 @@ function initGame() {
 
     spawnMonster();
     initRenderer();
+    canvas.addEventListener('pointerdown', onBattleClick);
     initUI();
+    updateAutosellBtn();
     requestAnimationFrame(gameLoop);
     setInterval(saveGame, 30000);
 }
@@ -84,22 +94,71 @@ function updateCombat(dt) {
         return f.life > 0;
     });
 
+    // Tick strength buff (counts down in real time)
+    const bs = state.buffs;
+    if (bs.strength.active) {
+        bs.strength.timeLeft -= dt;
+        if (bs.strength.timeLeft <= 0) {
+            bs.strength.active = false;
+            addLog('💪 Strength potion wore off', 'system');
+        }
+    }
+
     // Between-fight or death pause
     if (c.paused) {
         c.pauseTimer -= dt;
         if (c.pauseTimer <= 0) {
             c.paused = false;
             if (c.playerDead) {
-                c.playerDead = false;
-                state.player.hp = Math.floor(state.player.maxHp * 0.55);
-                addLog('You rise again, wounded...', 'system');
+                c.playerDead      = false;
+                state.player.hp   = state.player.maxHp;
+                c.playerTimer     = 0.5;
+                c.monsterTimer    = 1.5;
+                addLog('You rise again at full strength!', 'system');
             }
-            spawnMonster();
+            if (!state.monster) spawnMonster();
         }
         return;
     }
 
     if (!state.monster) return;
+
+    // Tick poison (only while an enemy is alive)
+    if (bs.poison.active) {
+        bs.poison.timeLeft  -= dt;
+        bs.poison.tickTimer -= dt;
+        if (bs.poison.tickTimer <= 0) {
+            bs.poison.tickTimer = 1.0;
+            const pdmg = Math.max(1, Math.ceil(state.monster.maxHp * 0.05));
+            state.monster.hp = Math.max(0, state.monster.hp - pdmg);
+            state.anim.monsterHit = 0.6;
+            spawnFloat(0.74, 0.38, `-${pdmg}☠️`, '#2ecc71');
+            addLog(`☠️ Poison: ${state.monster.type.name} -${pdmg}`, 'crit');
+            if (state.monster.hp <= 0) { killMonster(); return; }
+        }
+        if (bs.poison.timeLeft <= 0) {
+            bs.poison.active = false;
+            addLog('☠️ Poison wore off', 'system');
+        }
+    }
+
+    // Tick fire burn DoT
+    if (bs.fire.active) {
+        bs.fire.timeLeft  -= dt;
+        bs.fire.tickTimer -= dt;
+        if (bs.fire.tickTimer <= 0) {
+            bs.fire.tickTimer = 1.0;
+            state.monster.hp = Math.max(0, state.monster.hp - bs.fire.dps);
+            state.anim.monsterHit = 0.6;
+            spawnFloat(0.74, 0.32, `-${bs.fire.dps}🔥`, '#ff6600');
+            addLog(`🔥 Burn: ${state.monster.type.name} -${bs.fire.dps}`, 'crit');
+            if (state.monster.hp <= 0) { killMonster(); return; }
+        }
+        if (bs.fire.timeLeft <= 0) {
+            bs.fire.active = false;
+            addLog('🔥 Burn wore off', 'system');
+        }
+    }
 
     c.playerTimer -= dt;
     if (c.playerTimer <= 0) {
@@ -121,7 +180,8 @@ function doPlayerAttack() {
     const m = state.monster;
     if (!m) return;
 
-    let dmg = Math.max(1, Math.floor((p.attack - m.defense) * (0.8 + Math.random() * 0.4)));
+    const atkPower = state.buffs.strength.active ? Math.floor(p.attack * 1.5) : p.attack;
+    let dmg = Math.max(1, Math.floor((atkPower - m.defense) * (0.8 + Math.random() * 0.4)));
     dmg = Math.max(1, dmg);
     const isCrit = Math.random() < p.critChance;
     if (isCrit) dmg = Math.floor(dmg * p.critMult);
@@ -170,10 +230,19 @@ function killMonster() {
 
     // Gear drop
     if (Math.random() < GEAR_DROP_CHANCE) {
-        const item    = generateGear(floor);
-        state.player.inventory.push(item);
-        const logType = { legendary: 'legendary', epic: 'epic', rare: 'rare' }[item.rarity] || 'loot';
-        addLog(`🎁 ${GEAR_TYPES[item.typeKey].icon} ${item.name} [${RARITIES[item.rarity].label}]`, logType);
+        const item     = generateGear(floor);
+        const maxIdx   = state.ui.autosell ? RARITY_SELL_ORDER.indexOf(state.ui.autosell) : -1;
+        const itemIdx  = RARITY_SELL_ORDER.indexOf(item.rarity); // -1 for legendary (never auto-sold)
+        if (maxIdx >= 0 && itemIdx >= 0 && itemIdx <= maxIdx) {
+            const gold = Math.max(1, Math.floor(item.floor * SELL_MULTS[item.rarity]));
+            state.player.gold      += gold;
+            state.player.totalGold += gold;
+            addLog(`⚡ Auto-sold ${GEAR_TYPES[item.typeKey].icon} ${item.name} +${gold}💰`, 'gold');
+        } else {
+            state.player.inventory.push(item);
+            const logType = { legendary: 'legendary', epic: 'epic', rare: 'rare' }[item.rarity] || 'loot';
+            addLog(`🎁 ${GEAR_TYPES[item.typeKey].icon} ${item.name} [${RARITIES[item.rarity].label}]`, logType);
+        }
     }
 
     // XP
@@ -192,7 +261,6 @@ function killMonster() {
 
 function playerDied() {
     state.player.hp         = 0;
-    state.monster           = null;
     state.combat.paused     = true;
     state.combat.playerDead = true;
     state.combat.pauseTimer = 3.0;
@@ -323,12 +391,21 @@ function gainXP(amount) {
 
 // ─── Dungeon ─────────────────────────────────────────────────────────────────
 
+function floorDescendCost(floor) {
+    return Math.floor(floor * floor / 2 + floor * 10);
+}
+
 function advanceFloor() {
-    if (!state.dungeon.canAdvance) return;
+    const cost = floorDescendCost(state.dungeon.floor);
+    if (state.player.gold < cost) {
+        addLog(`⚠️ Need ${cost.toLocaleString()}💰 to descend!`, 'system');
+        return;
+    }
+    state.player.gold -= cost;
     state.dungeon.floor++;
     state.dungeon.kills      = 0;
     state.dungeon.canAdvance = false;
-    addLog(`⬇️ Descending to Floor ${state.dungeon.floor}...`, 'system');
+    addLog(`⬇️ Descending to Floor ${state.dungeon.floor}... (-${cost.toLocaleString()}💰)`, 'system');
     spawnMonster();
 }
 
@@ -343,59 +420,93 @@ function spawnFloat(xFrac, yFrac, text, color) {
     state.anim.floats.push({ xFrac, yFrac, text, color, life: 1.3, y: 0 });
 }
 
-// ─── Sell Menu ───────────────────────────────────────────────────────────────
+// ─── Autosell ────────────────────────────────────────────────────────────────
 
 const RARITY_SELL_ORDER = ['common', 'uncommon', 'rare', 'epic'];
 const SELL_MULTS = { common: 2, uncommon: 6, rare: 18, epic: 50, legendary: 120 };
 
-function toggleSellMenu() {
+function toggleAutosellMenu() {
     const overlay = document.getElementById('sell-overlay');
     if (overlay.classList.contains('hidden')) {
-        buildSellMenu();
+        buildAutosellMenu();
         overlay.classList.remove('hidden');
     } else {
         overlay.classList.add('hidden');
     }
 }
 
-function buildSellMenu() {
-    const sheet  = document.getElementById('sell-menu');
-    const inv    = state.player.inventory;
-    let html     = '<div class="sell-handle"></div><div class="sell-menu-title">Sell items up to rarity…</div>';
-    let cumItems = 0, cumGold = 0;
+function buildAutosellMenu() {
+    const sheet   = document.getElementById('sell-menu');
+    const current = state.ui.autosell;
+    let html = '<div class="sell-handle"></div><div class="sell-menu-title">Auto-sell threshold</div>';
+
+    html +=
+        `<button class="sell-option${!current ? ' autosell-active' : ''}" onclick="setAutosell(null)">` +
+            `<span class="sell-rarity" style="color:var(--muted)">${!current ? '✓ ' : ''}Off</span>` +
+            `<span class="sell-info">Keep all drops</span>` +
+        `</button>`;
 
     for (const rarity of RARITY_SELL_ORDER) {
-        const items = inv.filter(i => i.rarity === rarity);
-        const gold  = items.reduce((s, i) => s + Math.max(1, Math.floor(i.floor * SELL_MULTS[rarity])), 0);
-        cumItems += items.length;
-        cumGold  += gold;
-        const col      = RARITIES[rarity].color;
-        const disabled = cumItems === 0 ? 'disabled' : '';
+        const active = current === rarity;
+        const col    = RARITIES[rarity].color;
         html +=
-            `<button class="sell-option" ${disabled} onclick="sellUpTo('${rarity}')" style="border-color:${col}33">` +
-                `<span class="sell-rarity" style="color:${col}">${RARITIES[rarity].label}</span>` +
-                `<span class="sell-info">${cumItems} item${cumItems !== 1 ? 's' : ''} · +${cumGold}💰</span>` +
+            `<button class="sell-option${active ? ' autosell-active' : ''}" onclick="setAutosell('${rarity}')" style="border-color:${col}44">` +
+                `<span class="sell-rarity" style="color:${col}">${active ? '✓ ' : ''}≤ ${RARITIES[rarity].label}</span>` +
+                `<span class="sell-info">Auto-sell ${RARITIES[rarity].label} and below</span>` +
             `</button>`;
     }
 
-    html += '<button class="sell-cancel" onclick="closeSellMenu()">Cancel</button>';
+    html += '<button class="sell-cancel" onclick="closeAutosellMenu()">Cancel</button>';
     sheet.innerHTML = html;
 }
 
-function sellUpTo(maxRarity) {
-    const maxIdx = RARITY_SELL_ORDER.indexOf(maxRarity);
-    const toSell = state.player.inventory.filter(i => RARITY_SELL_ORDER.indexOf(i.rarity) <= maxIdx);
-    if (!toSell.length) { closeSellMenu(); return; }
-    const gold = toSell.reduce((s, i) => s + Math.max(1, Math.floor(i.floor * SELL_MULTS[i.rarity])), 0);
-    state.player.inventory = state.player.inventory.filter(i => RARITY_SELL_ORDER.indexOf(i.rarity) > maxIdx);
-    state.player.gold      += gold;
-    state.player.totalGold += gold;
-    addLog(`Sold ${toSell.length} items for ${gold}💰`, 'gold');
-    closeSellMenu();
+function setAutosell(rarity) {
+    state.ui.autosell = rarity;
+
+    // Immediately sell any existing inventory items that fall within the new threshold
+    if (rarity) {
+        const maxIdx = RARITY_SELL_ORDER.indexOf(rarity);
+        const toSell = state.player.inventory.filter(i => {
+            const idx = RARITY_SELL_ORDER.indexOf(i.rarity);
+            return idx >= 0 && idx <= maxIdx;
+        });
+        if (toSell.length > 0) {
+            const gold = toSell.reduce((s, i) => s + Math.max(1, Math.floor(i.floor * SELL_MULTS[i.rarity])), 0);
+            state.player.inventory = state.player.inventory.filter(i => {
+                const idx = RARITY_SELL_ORDER.indexOf(i.rarity);
+                return !(idx >= 0 && idx <= maxIdx);
+            });
+            state.player.gold      += gold;
+            state.player.totalGold += gold;
+            addLog(`⚡ Autosell ≤${RARITIES[rarity].label} — sold ${toSell.length} items for ${gold}💰`, 'gold');
+        } else {
+            addLog(`⚡ Autosell: ≤${RARITIES[rarity].label}`, 'system');
+        }
+    } else {
+        addLog(`⚡ Autosell: Off`, 'system');
+    }
+
+    updateAutosellBtn();
+    closeAutosellMenu();
 }
 
-function closeSellMenu() {
+function closeAutosellMenu() {
     document.getElementById('sell-overlay')?.classList.add('hidden');
+}
+
+function updateAutosellBtn() {
+    const btn = document.getElementById('autosell-btn');
+    if (!btn) return;
+    const r = state.ui.autosell;
+    if (r) {
+        btn.textContent    = `⚡ ≤${RARITIES[r].label}`;
+        btn.style.color    = RARITIES[r].color;
+        btn.style.borderColor = RARITIES[r].color + '99';
+    } else {
+        btn.textContent    = '⚡ Autosell';
+        btn.style.color    = '';
+        btn.style.borderColor = '';
+    }
 }
 
 function sellItem(itemId) {
@@ -408,6 +519,90 @@ function sellItem(itemId) {
     state.player.gold      += gold;
     state.player.totalGold += gold;
     addLog(`Sold ${GEAR_TYPES[item.typeKey].icon} ${item.name} for ${gold}💰`, 'gold');
+}
+
+// ─── Store ────────────────────────────────────────────────────────────────────
+
+function buyItem(itemId) {
+    const item = STORE_ITEMS.find(i => i.id === itemId);
+    if (!item) return;
+    const cost = item.costBase + Math.floor(state.dungeon.floor * item.costPerFloor);
+    if (state.player.gold < cost) { addLog('⚠️ Not enough gold!', 'system'); return; }
+    state.player.gold -= cost;
+
+    switch (itemId) {
+        case 'health_potion': {
+            const heal = Math.floor(state.player.maxHp * 0.40);
+            state.player.hp = Math.min(state.player.maxHp, state.player.hp + heal);
+            addLog(`🧪 Health potion! +${heal} HP`, 'player');
+            spawnFloat(0.22, 0.40, `+${heal}💚`, '#27ae60');
+            break;
+        }
+        case 'strength_potion': {
+            state.buffs.strength.active   = true;
+            state.buffs.strength.timeLeft = 45;
+            addLog('💪 Strength potion! +50% ATK for 45s', 'levelup');
+            break;
+        }
+        case 'poison_flask': {
+            state.buffs.poison.active    = true;
+            state.buffs.poison.timeLeft  = 8;
+            state.buffs.poison.tickTimer = 0;
+            addLog('☠️ Poison flask thrown!', 'crit');
+            break;
+        }
+        case 'fireball_spell': {
+            const instantDmg = Math.max(1, Math.floor(state.player.attack * 0.80));
+            const burnDps    = Math.max(1, Math.floor(state.player.attack * 0.10));
+            if (state.monster) {
+                state.monster.hp = Math.max(0, state.monster.hp - instantDmg);
+                state.anim.monsterHit = 1;
+                spawnFloat(0.74, 0.45, `-${instantDmg}🔥`, '#ff6600');
+                addLog(`🔥 Fireball hits ${state.monster.type.name} for ${instantDmg}!`, 'crit');
+                if (state.monster.hp <= 0) { killMonster(); break; }
+            }
+            state.buffs.fire.active    = true;
+            state.buffs.fire.timeLeft  = 8;
+            state.buffs.fire.tickTimer = 0;
+            state.buffs.fire.dps       = burnDps;
+            addLog(`🔥 Burning for ${burnDps}/s for 8s`, 'crit');
+            break;
+        }
+    }
+}
+
+// ─── Click Attack ─────────────────────────────────────────────────────────────
+
+function onBattleClick(e) {
+    if (!state || !state.monster || state.combat.paused) return;
+
+    const rect   = canvas.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
+
+    const sc        = CWIDTH / 560;
+    const mx        = CWIDTH  * 0.77 + state.anim.monsterX;
+    const my        = CHEIGHT * 0.70;
+    const s         = sc * (state.monster.type.sizeMult || 1.0);
+    const emojiSize = Math.round(62 * s);
+    const radius    = Math.max(32, 44 * sc);           // generous touch target
+    const cx        = mx;
+    const cy        = my - emojiSize * 0.5;
+
+    const dx = clickX - cx;
+    const dy = clickY - cy;
+    if (dx * dx + dy * dy <= radius * radius) doClickAttack();
+}
+
+function doClickAttack() {
+    const m   = state.monster;
+    const dmg = state.player.attack;                   // 100% ATK, no defense reduction
+    m.hp = Math.max(0, m.hp - dmg);
+    state.anim.monsterHit = 1;
+    state.anim.playerX    = 14;
+    spawnFloat(0.74, 0.42, `👊${dmg}`, '#ffe066');
+    addLog(`👊 You strike ${m.type.name} for ${dmg}!`, 'player');
+    if (m.hp <= 0) killMonster();
 }
 
 function setSortMode(mode) {

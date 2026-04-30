@@ -18,10 +18,6 @@
 
         <!-- Battle Scene -->
         <div id="battle-wrap">
-            <div id="monster-nameplate">
-                <span id="monster-name">—</span>
-                <span id="monster-hp-text"></span>
-            </div>
             <canvas id="battle-canvas" width="560" height="240"></canvas>
         </div>
 
@@ -36,6 +32,7 @@
             <button class="tab-btn" data-tab="equip">🎒 Equip</button>
             <button class="tab-btn" data-tab="inventory">📦 Loot</button>
             <button class="tab-btn" data-tab="dungeon">🏰 Dungeon</button>
+            <button class="tab-btn" data-tab="store">🏪 Store</button>
         </nav>
 
         <!-- Tab Panels -->
@@ -118,7 +115,7 @@
                         <button class="sort-btn" data-sort="rarity">Rarity</button>
                         <button class="sort-btn" data-sort="type">Type</button>
                     </div>
-                    <button id="sell-junk-btn" onclick="toggleSellMenu()">🗑️ Sell Items</button>
+                    <button id="autosell-btn" onclick="toggleAutosellMenu()">⚡ Autosell</button>
                 </div>
                 <div id="inv-list"></div>
             </div>
@@ -131,7 +128,7 @@
                     <div class="bar-group">
                         <div class="bar-track prog-track"><div id="prog-fill" class="bar-fill prog-fill" style="width:0%"></div></div>
                     </div>
-                    <button id="advance-btn" class="advance-btn" disabled onclick="advanceFloor()">⬇️ Descend to Floor <span id="next-floor-num">2</span></button>
+                    <button id="advance-btn" class="advance-btn" disabled onclick="advanceFloor()">⬇️ Descend to Floor <span id="next-floor-num">2</span> · <span id="descend-cost">10💰</span></button>
                 </div>
                 <div class="dungeon-card">
                     <div class="dungeon-title">💀 Current Enemy</div>
@@ -145,6 +142,17 @@
                     <button class="action-btn danger-btn" onclick="confirmReset()">🔄 New Game</button>
                 </div>
             </div>
+
+            <!-- STORE TAB -->
+            <div class="tab-panel" id="tab-store">
+                <div class="equip-note">Prices scale with current floor. Effects are temporary.</div>
+                <div id="store-items"></div>
+                <div id="active-buffs-card" class="stat-block" style="display:none">
+                    <div class="stat-title">⚡ Active Effects</div>
+                    <div id="buff-list"></div>
+                </div>
+            </div>
+
         </div>
     <!-- Sell bottom sheet (fixed overlay, outside scroll containers) -->
     <div id="sell-overlay" class="sell-overlay hidden" onclick="closeSellMenu()">
