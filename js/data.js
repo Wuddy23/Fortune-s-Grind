@@ -148,7 +148,7 @@ const STORE_ITEMS = [
         id: 'health_potion',
         name: 'Health Potion',
         icon: '🧪',
-        desc: 'Instantly restore 40% of max HP',
+        desc: 'Permanently increase max HP by 40%',
         costBase: 5,
         costPerFloor: 8
     },

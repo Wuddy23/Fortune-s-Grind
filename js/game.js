@@ -537,10 +537,11 @@ function buyItem(itemId) {
 
     switch (itemId) {
         case 'health_potion': {
-            const heal = Math.floor(state.player.maxHp * 0.40);
-            state.player.hp = Math.min(state.player.maxHp, state.player.hp + heal);
-            addLog(`🧪 Health potion! +${heal} HP`, 'player');
-            spawnFloat(0.22, 0.40, `+${heal}💚`, '#27ae60');
+            const bonus = Math.floor(state.player.maxHp * 0.40);
+            state.player.baseHp += bonus;
+            recalcStats();
+            addLog(`🧪 Max HP +${bonus}! (now ${state.player.maxHp})`, 'levelup');
+            spawnFloat(0.22, 0.40, `+${bonus}❤️`, '#27ae60');
             break;
         }
         case 'strength_potion': {
