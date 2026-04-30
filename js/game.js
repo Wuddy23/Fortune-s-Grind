@@ -401,6 +401,9 @@ function advanceFloor() {
         addLog(`⚠️ Need ${cost.toLocaleString()}💰 to descend!`, 'system');
         return;
     }
+    if (state.player.level < state.dungeon.floor - 5) {
+        if (!confirm(`You're Level ${state.player.level} on Floor ${state.dungeon.floor} — this might be very dangerous. Descend anyway?`)) return;
+    }
     state.player.gold -= cost;
     state.dungeon.floor++;
     state.dungeon.kills      = 0;
