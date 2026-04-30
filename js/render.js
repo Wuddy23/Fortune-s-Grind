@@ -280,6 +280,18 @@ function drawMonster(x, y, sc) {
     ctx.textBaseline = 'bottom';
     ctx.fillText(m.type.emoji, 0, 4);
 
+    // Name label below the monster
+    ctx.filter = 'none';
+    const nameSize = Math.max(10, Math.round(sc * 13));
+    ctx.font         = `bold ${nameSize}px sans-serif`;
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'top';
+    ctx.strokeStyle  = 'rgba(0,0,0,0.9)';
+    ctx.lineWidth    = 3;
+    ctx.strokeText(m.type.name, 0, 20);
+    ctx.fillStyle    = '#e0e0ff';
+    ctx.fillText(m.type.name, 0, 20);
+
     ctx.restore();
 }
 

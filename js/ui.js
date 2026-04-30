@@ -33,7 +33,6 @@ function initUI() {
 
 function updateUI() {
     updateHeader();
-    updateNameplate();
     updateStats();
     updateEquipment();
     updateInventory();
@@ -46,14 +45,6 @@ function updateUI() {
 function updateHeader() {
     document.getElementById('gold-val').textContent  = state.player.gold.toLocaleString();
     document.getElementById('floor-val').textContent = state.dungeon.floor;
-}
-
-// ─── Nameplate ───────────────────────────────────────────────────────────────
-
-function updateNameplate() {
-    const m = state.monster;
-    document.getElementById('monster-name').textContent    = m ? `${m.type.emoji} ${m.type.name}` : (state.combat.paused ? '...' : '—');
-    document.getElementById('monster-hp-text').textContent = m ? `${m.hp} / ${m.maxHp} HP` : '';
 }
 
 // ─── Player Stats ─────────────────────────────────────────────────────────────

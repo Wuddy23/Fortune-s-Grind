@@ -78,31 +78,6 @@ body {
     flex-shrink: 0;
 }
 
-#monster-nameplate {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    padding: 5px 10px;
-    pointer-events: none;
-    z-index: 2;
-}
-
-#monster-name {
-    font-size: 0.78rem;
-    font-weight: bold;
-    color: #e0e0ff;
-    text-shadow: 0 1px 3px #000, 0 0 8px #000;
-}
-
-#monster-hp-text {
-    font-size: 0.72rem;
-    color: #e74c3c;
-    text-shadow: 0 1px 2px #000;
-}
 
 #battle-canvas {
     display: block;
