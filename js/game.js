@@ -396,9 +396,32 @@ function buildAutosellMenu() {
 
 function setAutosell(rarity) {
     state.ui.autosell = rarity;
+
+    // Immediately sell any existing inventory items that fall within the new threshold
+    if (rarity) {
+        const maxIdx = RARITY_SELL_ORDER.indexOf(rarity);
+        const toSell = state.player.inventory.filter(i => {
+            const idx = RARITY_SELL_ORDER.indexOf(i.rarity);
+            return idx >= 0 && idx <= maxIdx;
+        });
+        if (toSell.length > 0) {
+            const gold = toSell.reduce((s, i) => s + Math.max(1, Math.floor(i.floor * SELL_MULTS[i.rarity])), 0);
+            state.player.inventory = state.player.inventory.filter(i => {
+                const idx = RARITY_SELL_ORDER.indexOf(i.rarity);
+                return !(idx >= 0 && idx <= maxIdx);
+            });
+            state.player.gold      += gold;
+            state.player.totalGold += gold;
+            addLog(`⚡ Autosell ≤${RARITIES[rarity].label} — sold ${toSell.length} items for ${gold}💰`, 'gold');
+        } else {
+            addLog(`⚡ Autosell: ≤${RARITIES[rarity].label}`, 'system');
+        }
+    } else {
+        addLog(`⚡ Autosell: Off`, 'system');
+    }
+
     updateAutosellBtn();
     closeAutosellMenu();
-    addLog(`⚡ Autosell: ${rarity ? '≤ ' + RARITIES[rarity].label : 'Off'}`, 'system');
 }
 
 function closeAutosellMenu() {
