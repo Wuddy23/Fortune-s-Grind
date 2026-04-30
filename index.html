@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fortune's Grind</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <header id="top-bar">
+            <span id="game-title">⚔️ Fortune's Grind</span>
+            <div id="header-right">
+                <span id="gold-display">💰 <strong id="gold-val">0</strong></span>
+                <span id="floor-display">🏰 F<strong id="floor-val">1</strong></span>
+            </div>
+        </header>
+
+        <!-- Battle Scene -->
+        <div id="battle-wrap">
+            <div id="monster-nameplate">
+                <span id="monster-name">—</span>
+                <span id="monster-hp-text"></span>
+            </div>
+            <canvas id="battle-canvas" width="560" height="240"></canvas>
+        </div>
+
+        <!-- Combat Log -->
+        <div id="combat-log">
+            <div id="log-inner"></div>
+        </div>
+
+        <!-- Tab Bar -->
+        <nav id="tab-bar">
+            <button class="tab-btn active" data-tab="stats">📊 Stats</button>
+            <button class="tab-btn" data-tab="equip">🎒 Equip</button>
+            <button class="tab-btn" data-tab="inventory">📦 Loot</button>
+            <button class="tab-btn" data-tab="dungeon">🏰 Dungeon</button>
+        </nav>
+
+        <!-- Tab Panels -->
+        <div id="tab-content">
+
+            <!-- STATS TAB -->
+            <div class="tab-panel active" id="tab-stats">
+                <div class="panel-row">
+                    <div class="stat-block">
+                        <div class="stat-title">HERO — Level <span id="p-level">1</span></div>
+                        <div class="bar-group">
+                            <div class="bar-track hp-track"><div id="hp-fill" class="bar-fill hp-fill" style="width:100%"></div></div>
+                            <div class="bar-label"><span id="p-hp">100</span> / <span id="p-maxhp">100</span> HP</div>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar-track xp-track"><div id="xp-fill" class="bar-fill xp-fill" style="width:0%"></div></div>
+                            <div class="bar-label"><span id="p-xp">0</span> / <span id="p-xpnext">100</span> XP</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-grid">
+                    <div class="stat-card"><span class="sc-label">⚔️ Attack</span><span class="sc-val" id="p-atk">10</span></div>
+                    <div class="stat-card"><span class="sc-label">🛡️ Defense</span><span class="sc-val" id="p-def">3</span></div>
+                    <div class="stat-card"><span class="sc-label">⚡ Speed</span><span class="sc-val" id="p-spd">1.0/s</span></div>
+                    <div class="stat-card"><span class="sc-label">🎯 Crit</span><span class="sc-val" id="p-crit">5%</span></div>
+                    <div class="stat-card wide"><span class="sc-label">💰 Total Gold Earned</span><span class="sc-val" id="p-total-gold">0</span></div>
+                    <div class="stat-card wide"><span class="sc-label">☠️ Total Kills</span><span class="sc-val" id="p-total-kills">0</span></div>
+                </div>
+            </div>
+
+            <!-- EQUIPMENT TAB -->
+            <div class="tab-panel" id="tab-equip">
+                <div class="equip-note">Tap inventory item to equip. Tap slot to unequip.</div>
+                <div id="equip-grid">
+                    <div class="equip-slot" data-slot="helmet">
+                        <div class="eq-icon">🪖</div>
+                        <div class="eq-label">Helmet</div>
+                        <div class="eq-name" id="eq-helmet-name">Empty</div>
+                        <div class="eq-stats" id="eq-helmet-stats"></div>
+                    </div>
+                    <div class="equip-slot" data-slot="armor">
+                        <div class="eq-icon">🥋</div>
+                        <div class="eq-label">Armor</div>
+                        <div class="eq-name" id="eq-armor-name">Empty</div>
+                        <div class="eq-stats" id="eq-armor-stats"></div>
+                    </div>
+                    <div class="equip-slot" data-slot="weapon">
+                        <div class="eq-icon">⚔️</div>
+                        <div class="eq-label">Weapon</div>
+                        <div class="eq-name" id="eq-weapon-name">Empty</div>
+                        <div class="eq-stats" id="eq-weapon-stats"></div>
+                    </div>
+                    <div class="equip-slot" data-slot="shield">
+                        <div class="eq-icon">🛡️</div>
+                        <div class="eq-label">Shield</div>
+                        <div class="eq-name" id="eq-shield-name">Empty</div>
+                        <div class="eq-stats" id="eq-shield-stats"></div>
+                    </div>
+                    <div class="equip-slot" data-slot="gloves">
+                        <div class="eq-icon">🧤</div>
+                        <div class="eq-label">Gloves</div>
+                        <div class="eq-name" id="eq-gloves-name">Empty</div>
+                        <div class="eq-stats" id="eq-gloves-stats"></div>
+                    </div>
+                    <div class="equip-slot" data-slot="shoes">
+                        <div class="eq-icon">👢</div>
+                        <div class="eq-label">Shoes</div>
+                        <div class="eq-name" id="eq-shoes-name">Empty</div>
+                        <div class="eq-stats" id="eq-shoes-stats"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- INVENTORY TAB -->
+            <div class="tab-panel" id="tab-inventory">
+                <div class="inv-toolbar">
+                    <span id="inv-count-label">0 items</span>
+                    <div class="sort-group">
+                        <button class="sort-btn active" data-sort="new">New</button>
+                        <button class="sort-btn" data-sort="rarity">Rarity</button>
+                        <button class="sort-btn" data-sort="type">Type</button>
+                    </div>
+                    <button id="sell-junk-btn" onclick="sellJunk()">Sell Common</button>
+                </div>
+                <div id="inv-list"></div>
+            </div>
+
+            <!-- DUNGEON TAB -->
+            <div class="tab-panel" id="tab-dungeon">
+                <div class="dungeon-card">
+                    <div class="dungeon-title">🏰 Dungeon Floor <span id="d-floor">1</span></div>
+                    <div class="dungeon-row"><span>Kills</span><strong id="d-kills">0 / 10</strong></div>
+                    <div class="bar-group">
+                        <div class="bar-track prog-track"><div id="prog-fill" class="bar-fill prog-fill" style="width:0%"></div></div>
+                    </div>
+                    <button id="advance-btn" class="advance-btn" disabled onclick="advanceFloor()">⬇️ Descend to Floor <span id="next-floor-num">2</span></button>
+                </div>
+                <div class="dungeon-card">
+                    <div class="dungeon-title">💀 Current Enemy</div>
+                    <div class="dungeon-row"><span>Name</span><strong id="d-monster-name">—</strong></div>
+                    <div class="dungeon-row"><span>HP</span><strong id="d-monster-hp">—</strong></div>
+                    <div class="dungeon-row"><span>Attack</span><strong id="d-monster-atk">—</strong></div>
+                    <div class="dungeon-row"><span>Defense</span><strong id="d-monster-def">—</strong></div>
+                </div>
+                <div class="dungeon-card save-card">
+                    <button class="action-btn" onclick="saveGame()">💾 Save Game</button>
+                    <button class="action-btn danger-btn" onclick="confirmReset()">🔄 New Game</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/data.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/render.js"></script>
+    <script src="js/ui.js"></script>
+</body>
+</html>
