@@ -59,12 +59,12 @@ function initGame() {
 // ─── Game Loop ───────────────────────────────────────────────────────────────
 
 function gameLoop(ts) {
+    requestAnimationFrame(gameLoop);          // schedule next frame first so errors can't kill the loop
     const dt = Math.min((ts - lastTime) / 1000, 0.1);
     lastTime = ts;
     updateCombat(dt);
     renderFrame(ts);
     updateUI();
-    requestAnimationFrame(gameLoop);
 }
 
 // ─── Combat ──────────────────────────────────────────────────────────────────
