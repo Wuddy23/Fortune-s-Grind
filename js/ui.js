@@ -1,4 +1,4 @@
-let lastLogLen = 0;
+let lastLogMsg = '';
 let lastInvLen = -1;
 let lastInvSort = '';
 let lastEquipHash = '';
@@ -112,8 +112,7 @@ function updateEquipment() {
 function updateInventory() {
     const inv    = state.player.inventory;
     const sort   = state.ui.sortMode;
-    const invKey = inv.length + '_' + sort;
-    if (invKey === lastInvLen + lastInvSort) return;
+    if (inv.length === lastInvLen && sort === lastInvSort) return;
     lastInvLen  = inv.length;
     lastInvSort = sort;
 
@@ -187,9 +186,10 @@ function updateDungeon() {
 // ─── Combat Log ──────────────────────────────────────────────────────────────
 
 function updateLog() {
-    const log = state.combat.log;
-    if (log.length === lastLogLen) return;
-    lastLogLen = log.length;
+    const log     = state.combat.log;
+    const topMsg  = log.length > 0 ? log[0].msg : '';
+    if (topMsg === lastLogMsg) return;
+    lastLogMsg = topMsg;
 
     const colorMap = {
         player: '#5dade2', monster: '#e74c3c', crit: '#f5b041',
@@ -213,7 +213,7 @@ function setEl(id, val) {
 
 function setStyle(id, prop, val) {
     const el = document.getElementById(id);
-    if (el) el.style[prop] = val;
+    if (el && el.style[prop] !== val) el.style[prop] = val;
 }
 
 function fmtStats(stats) {
