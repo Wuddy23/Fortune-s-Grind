@@ -316,6 +316,83 @@ body {
     cursor: pointer;
 }
 
+/* ─── SELL MENU ─── */
+.sell-wrap {
+    position: relative;
+}
+
+.sell-menu {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    right: 0;
+    background: #141430;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px;
+    min-width: 230px;
+    z-index: 200;
+    box-shadow: 0 -6px 24px rgba(0,0,0,0.6);
+}
+
+.sell-menu.hidden { display: none; }
+
+.sell-menu-title {
+    font-size: 0.72rem;
+    color: var(--muted);
+    text-align: center;
+    padding: 2px 0 8px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.sell-option {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 9px 11px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    margin-bottom: 5px;
+    cursor: pointer;
+    transition: background 0.15s;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.sell-option:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.sell-option:not(:disabled):active { background: #222248; }
+
+.sell-rarity {
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.sell-info {
+    font-size: 0.7rem;
+    color: var(--muted);
+}
+
+.sell-cancel {
+    width: 100%;
+    padding: 8px;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+    cursor: pointer;
+    margin-top: 2px;
+}
+
+.sell-cancel:active { background: #1e1e3a; }
+
 #inv-list {
     display: flex;
     flex-direction: column;

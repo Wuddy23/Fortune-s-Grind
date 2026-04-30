@@ -118,7 +118,10 @@
                         <button class="sort-btn" data-sort="rarity">Rarity</button>
                         <button class="sort-btn" data-sort="type">Type</button>
                     </div>
-                    <button id="sell-junk-btn" onclick="sellJunk()">Sell Common</button>
+                    <div class="sell-wrap">
+                        <button id="sell-junk-btn" onclick="toggleSellMenu()">🗑️ Sell Items</button>
+                        <div id="sell-menu" class="sell-menu hidden"></div>
+                    </div>
                 </div>
                 <div id="inv-list"></div>
             </div>
