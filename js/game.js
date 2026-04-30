@@ -24,6 +24,7 @@ function createState() {
         anim: { floats: [], playerHit: 0, monsterHit: 0, playerX: 0, monsterX: 0 },
         ui:    { nextId: 1, sortMode: 'new', autosell: null },
         buffs: { strength: { active: false, timeLeft: 0 },
+                 hpBoost:  { active: false, timeLeft: 0, bonus: 0 },
                  poison:   { active: false, timeLeft: 0, tickTimer: 0 },
                  fire:     { active: false, timeLeft: 0, tickTimer: 0, dps: 0 } }
     };
@@ -48,6 +49,7 @@ function initGame() {
             state.monster = null;
             // always reset buffs on load — they're temporary
             state.buffs = { strength: { active: false, timeLeft: 0 },
+                            hpBoost:  { active: false, timeLeft: 0, bonus: 0 },
                             poison:   { active: false, timeLeft: 0, tickTimer: 0 },
                             fire:     { active: false, timeLeft: 0, tickTimer: 0, dps: 0 } };
             recalcStats();
@@ -103,6 +105,18 @@ function updateCombat(dt) {
         if (bs.strength.timeLeft <= 0) {
             bs.strength.active = false;
             addLog('💪 Strength potion wore off', 'system');
+        }
+    }
+
+    // Tick HP boost buff
+    if (bs.hpBoost.active) {
+        bs.hpBoost.timeLeft -= dt;
+        if (bs.hpBoost.timeLeft <= 0) {
+            bs.hpBoost.active = false;
+            state.player.baseHp -= bs.hpBoost.bonus;
+            recalcStats();
+            state.player.hp = Math.min(state.player.hp, state.player.maxHp);
+            addLog('🧪 HP boost wore off', 'system');
         }
     }
 
@@ -537,10 +551,17 @@ function buyItem(itemId) {
 
     switch (itemId) {
         case 'health_potion': {
+            // Remove any existing hp boost first to avoid stacking
+            if (bs.hpBoost.active) {
+                state.player.baseHp -= bs.hpBoost.bonus;
+            }
             const bonus = Math.floor(state.player.maxHp * 0.40);
-            state.player.baseHp += bonus;
+            state.player.baseHp   += bonus;
+            bs.hpBoost.active      = true;
+            bs.hpBoost.timeLeft    = 20;
+            bs.hpBoost.bonus       = bonus;
             recalcStats();
-            addLog(`🧪 Max HP +${bonus}! (now ${state.player.maxHp})`, 'levelup');
+            addLog(`🧪 Max HP +${bonus} for 20s! (now ${state.player.maxHp})`, 'levelup');
             spawnFloat(0.22, 0.40, `+${bonus}❤️`, '#27ae60');
             break;
         }

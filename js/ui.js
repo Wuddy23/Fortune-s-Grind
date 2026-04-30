@@ -301,6 +301,7 @@ function updateStore() {
     // Always update active buff timers
     const bs       = state.buffs;
     const active   = [];
+    if (bs.hpBoost.active)  active.push({ icon: '🧪', name: `Max HP +${bs.hpBoost.bonus}`, t: bs.hpBoost.timeLeft });
     if (bs.strength.active) active.push({ icon: '💪', name: 'Strength +50%', t: bs.strength.timeLeft });
     if (bs.poison.active)   active.push({ icon: '☠️', name: 'Poison Active', t: bs.poison.timeLeft });
     if (bs.fire.active)     active.push({ icon: '🔥', name: `Burn ${bs.fire.dps}/s`, t: bs.fire.timeLeft });
