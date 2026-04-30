@@ -68,8 +68,9 @@ function updateStats() {
     setEl('p-def',        p.defense);
     setEl('p-spd',        p.speed.toFixed(2) + '/s');
     setEl('p-crit',       Math.round(p.critChance * 100) + '%');
-    setEl('p-total-gold', p.totalGold.toLocaleString());
+    setEl('p-total-gold',  p.totalGold.toLocaleString());
     setEl('p-total-kills', p.totalKills.toLocaleString());
+    setEl('p-time-alive',  fmtTime(p.timeAlive || 0));
 }
 
 // ─── Equipment ───────────────────────────────────────────────────────────────
@@ -226,6 +227,16 @@ function setEl(id, val) {
 function setStyle(id, prop, val) {
     const el = document.getElementById(id);
     if (el && el.style[prop] !== val) el.style[prop] = val;
+}
+
+function fmtTime(seconds) {
+    const s = Math.floor(seconds);
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    if (h > 0) return `${h}h ${m}m ${sec}s`;
+    if (m > 0) return `${m}m ${sec}s`;
+    return `${sec}s`;
 }
 
 function fmtStats(stats) {

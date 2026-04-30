@@ -9,7 +9,7 @@ function createState() {
             baseHp: 100, hp: 100,
             baseAtk: 10, baseDef: 3, baseSpd: 1.0, baseCrit: 0.05,
             critMult: 2.0,
-            gold: 0, totalGold: 0, totalKills: 0,
+            gold: 0, totalGold: 0, totalKills: 0, timeAlive: 0,
             equipment: { weapon: null, shield: null, armor: null, shoes: null, gloves: null, helmet: null },
             inventory: [],
             // derived
@@ -38,6 +38,7 @@ function initGame() {
             state = JSON.parse(saved);
             if (!state.player.totalGold)   state.player.totalGold = 0;
             if (!state.player.totalKills)  state.player.totalKills = 0;
+            if (!state.player.timeAlive)   state.player.timeAlive = 0;
             if (!state.ui)                 state.ui = { nextId: 1000, sortMode: 'new', autosell: null };
             if (!('autosell' in state.ui)) state.ui.autosell = null;
             if (!state.anim)               state.anim = { floats: [], playerHit: 0, monsterHit: 0, playerX: 0, monsterX: 0 };
@@ -72,6 +73,7 @@ function gameLoop(ts) {
     requestAnimationFrame(gameLoop);          // schedule next frame first so errors can't kill the loop
     const dt = Math.min((ts - lastTime) / 1000, 0.1);
     lastTime = ts;
+    state.player.timeAlive += dt;
     updateCombat(dt);
     renderFrame(ts);
     updateUI();
