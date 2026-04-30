@@ -131,7 +131,7 @@ function updateInventory() {
 
     for (const item of sorted) {
         const equipped   = state.player.equipment[item.typeKey];
-        const isUpgrade  = isUpgrade(item, equipped);
+        const upgrade    = isUpgrade(item, equipped);
         const div        = document.createElement('div');
         div.className    = `inv-item rarity-border-${item.rarity}`;
         div.innerHTML    =
@@ -139,7 +139,7 @@ function updateInventory() {
                 `<span class="inv-icon">${GEAR_TYPES[item.typeKey].icon}</span>` +
                 `<span class="inv-name" style="color:${RARITIES[item.rarity].color}">${item.name}</span>` +
                 `<span class="inv-badge badge-${item.rarity}">${RARITIES[item.rarity].label}</span>` +
-                (isUpgrade ? `<span class="upgrade-tag">▲UP</span>` : '') +
+                (upgrade ? `<span class="upgrade-tag">▲UP</span>` : '') +
             `</div>` +
             `<div class="inv-stats">${fmtStats(item.stats)}</div>` +
             `<div class="inv-floor">Dropped on floor ${item.floor}</div>` +

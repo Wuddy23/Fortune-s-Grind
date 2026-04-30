@@ -59,12 +59,12 @@ function initGame() {
 // ─── Game Loop ───────────────────────────────────────────────────────────────
 
 function gameLoop(ts) {
+    requestAnimationFrame(gameLoop);          // schedule next frame first so errors can't kill the loop
     const dt = Math.min((ts - lastTime) / 1000, 0.1);
     lastTime = ts;
     updateCombat(dt);
     renderFrame(ts);
     updateUI();
-    requestAnimationFrame(gameLoop);
 }
 
 // ─── Combat ──────────────────────────────────────────────────────────────────
@@ -343,14 +343,59 @@ function spawnFloat(xFrac, yFrac, text, color) {
     state.anim.floats.push({ xFrac, yFrac, text, color, life: 1.3, y: 0 });
 }
 
-function sellJunk() {
-    const commons = state.player.inventory.filter(i => i.rarity === 'common');
-    if (!commons.length) { addLog('No common items to sell.', 'system'); return; }
-    const gold = commons.reduce((s, i) => s + Math.max(1, Math.floor(i.floor * 2)), 0);
-    state.player.inventory = state.player.inventory.filter(i => i.rarity !== 'common');
+// ─── Sell Menu ───────────────────────────────────────────────────────────────
+
+const RARITY_SELL_ORDER = ['common', 'uncommon', 'rare', 'epic'];
+const SELL_MULTS = { common: 2, uncommon: 6, rare: 18, epic: 50 };
+
+function toggleSellMenu() {
+    const overlay = document.getElementById('sell-overlay');
+    if (overlay.classList.contains('hidden')) {
+        buildSellMenu();
+        overlay.classList.remove('hidden');
+    } else {
+        overlay.classList.add('hidden');
+    }
+}
+
+function buildSellMenu() {
+    const sheet  = document.getElementById('sell-menu');
+    const inv    = state.player.inventory;
+    let html     = '<div class="sell-handle"></div><div class="sell-menu-title">Sell items up to rarity…</div>';
+    let cumItems = 0, cumGold = 0;
+
+    for (const rarity of RARITY_SELL_ORDER) {
+        const items = inv.filter(i => i.rarity === rarity);
+        const gold  = items.reduce((s, i) => s + Math.max(1, Math.floor(i.floor * SELL_MULTS[rarity])), 0);
+        cumItems += items.length;
+        cumGold  += gold;
+        const col      = RARITIES[rarity].color;
+        const disabled = cumItems === 0 ? 'disabled' : '';
+        html +=
+            `<button class="sell-option" ${disabled} onclick="sellUpTo('${rarity}')" style="border-color:${col}33">` +
+                `<span class="sell-rarity" style="color:${col}">${RARITIES[rarity].label}</span>` +
+                `<span class="sell-info">${cumItems} item${cumItems !== 1 ? 's' : ''} · +${cumGold}💰</span>` +
+            `</button>`;
+    }
+
+    html += '<button class="sell-cancel" onclick="closeSellMenu()">Cancel</button>';
+    sheet.innerHTML = html;
+}
+
+function sellUpTo(maxRarity) {
+    const maxIdx = RARITY_SELL_ORDER.indexOf(maxRarity);
+    const toSell = state.player.inventory.filter(i => RARITY_SELL_ORDER.indexOf(i.rarity) <= maxIdx);
+    if (!toSell.length) { closeSellMenu(); return; }
+    const gold = toSell.reduce((s, i) => s + Math.max(1, Math.floor(i.floor * SELL_MULTS[i.rarity])), 0);
+    state.player.inventory = state.player.inventory.filter(i => RARITY_SELL_ORDER.indexOf(i.rarity) > maxIdx);
     state.player.gold      += gold;
     state.player.totalGold += gold;
-    addLog(`Sold ${commons.length} common items for ${gold}💰`, 'gold');
+    addLog(`Sold ${toSell.length} items for ${gold}💰`, 'gold');
+    closeSellMenu();
+}
+
+function closeSellMenu() {
+    document.getElementById('sell-overlay')?.classList.add('hidden');
 }
 
 function setSortMode(mode) {
