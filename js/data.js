@@ -167,6 +167,14 @@ const STORE_ITEMS = [
         desc: 'Poisons enemy: 5% max HP/s for 8s',
         costBase: 8,
         costPerFloor: 10
+    },
+    {
+        id: 'fireball_spell',
+        name: 'Fireball Scroll',
+        icon: '🔥',
+        desc: '80% ATK instant hit + 10% ATK/s burn for 8s',
+        costBase: 15,
+        costPerFloor: 15
     }
 ];
 

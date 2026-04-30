@@ -24,7 +24,8 @@ function createState() {
         anim: { floats: [], playerHit: 0, monsterHit: 0, playerX: 0, monsterX: 0 },
         ui:    { nextId: 1, sortMode: 'new', autosell: null },
         buffs: { strength: { active: false, timeLeft: 0 },
-                 poison:   { active: false, timeLeft: 0, tickTimer: 0 } }
+                 poison:   { active: false, timeLeft: 0, tickTimer: 0 },
+                 fire:     { active: false, timeLeft: 0, tickTimer: 0, dps: 0 } }
     };
 }
 
@@ -46,7 +47,8 @@ function initGame() {
             state.monster = null;
             // always reset buffs on load — they're temporary
             state.buffs = { strength: { active: false, timeLeft: 0 },
-                            poison:   { active: false, timeLeft: 0, tickTimer: 0 } };
+                            poison:   { active: false, timeLeft: 0, tickTimer: 0 },
+                            fire:     { active: false, timeLeft: 0, tickTimer: 0, dps: 0 } };
             recalcStats();
         } catch (_) {
             state = createState();
@@ -136,6 +138,24 @@ function updateCombat(dt) {
         if (bs.poison.timeLeft <= 0) {
             bs.poison.active = false;
             addLog('☠️ Poison wore off', 'system');
+        }
+    }
+
+    // Tick fire burn DoT
+    if (bs.fire.active) {
+        bs.fire.timeLeft  -= dt;
+        bs.fire.tickTimer -= dt;
+        if (bs.fire.tickTimer <= 0) {
+            bs.fire.tickTimer = 1.0;
+            state.monster.hp = Math.max(0, state.monster.hp - bs.fire.dps);
+            state.anim.monsterHit = 0.6;
+            spawnFloat(0.74, 0.32, `-${bs.fire.dps}🔥`, '#ff6600');
+            addLog(`🔥 Burn: ${state.monster.type.name} -${bs.fire.dps}`, 'crit');
+            if (state.monster.hp <= 0) { killMonster(); return; }
+        }
+        if (bs.fire.timeLeft <= 0) {
+            bs.fire.active = false;
+            addLog('🔥 Burn wore off', 'system');
         }
     }
 
@@ -528,6 +548,23 @@ function buyItem(itemId) {
             state.buffs.poison.timeLeft  = 8;
             state.buffs.poison.tickTimer = 0;
             addLog('☠️ Poison flask thrown!', 'crit');
+            break;
+        }
+        case 'fireball_spell': {
+            const instantDmg = Math.max(1, Math.floor(state.player.attack * 0.80));
+            const burnDps    = Math.max(1, Math.floor(state.player.attack * 0.10));
+            if (state.monster) {
+                state.monster.hp = Math.max(0, state.monster.hp - instantDmg);
+                state.anim.monsterHit = 1;
+                spawnFloat(0.74, 0.45, `-${instantDmg}🔥`, '#ff6600');
+                addLog(`🔥 Fireball hits ${state.monster.type.name} for ${instantDmg}!`, 'crit');
+                if (state.monster.hp <= 0) { killMonster(); break; }
+            }
+            state.buffs.fire.active    = true;
+            state.buffs.fire.timeLeft  = 8;
+            state.buffs.fire.tickTimer = 0;
+            state.buffs.fire.dps       = burnDps;
+            addLog(`🔥 Burning for ${burnDps}/s for 8s`, 'crit');
             break;
         }
     }

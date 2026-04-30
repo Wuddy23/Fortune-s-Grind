@@ -292,6 +292,7 @@ function updateStore() {
     const active   = [];
     if (bs.strength.active) active.push({ icon: '💪', name: 'Strength +50%', t: bs.strength.timeLeft });
     if (bs.poison.active)   active.push({ icon: '☠️', name: 'Poison Active', t: bs.poison.timeLeft });
+    if (bs.fire.active)     active.push({ icon: '🔥', name: `Burn ${bs.fire.dps}/s`, t: bs.fire.timeLeft });
 
     const card = document.getElementById('active-buffs-card');
     const list2 = document.getElementById('buff-list');
