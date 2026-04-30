@@ -339,7 +339,6 @@ function floorDescendCost(floor) {
 }
 
 function advanceFloor() {
-    if (!state.dungeon.canAdvance) return;
     const cost = floorDescendCost(state.dungeon.floor);
     if (state.player.gold < cost) {
         addLog(`⚠️ Need ${cost.toLocaleString()}💰 to descend!`, 'system');

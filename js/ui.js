@@ -178,10 +178,10 @@ function updateDungeon() {
     const costEl = document.getElementById('descend-cost');
     if (costEl) {
         costEl.textContent = cost.toLocaleString() + '💰';
-        costEl.style.color = d.canAdvance && !canAfford ? '#e74c3c' : '';
+        costEl.style.color = !canAfford ? '#e74c3c' : '';
     }
 
-    document.getElementById('advance-btn').disabled = !d.canAdvance || !canAfford;
+    document.getElementById('advance-btn').disabled = !canAfford;
 
     if (m) {
         setEl('d-monster-name', `${m.type.emoji} ${m.type.name}`);
