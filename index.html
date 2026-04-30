@@ -118,10 +118,7 @@
                         <button class="sort-btn" data-sort="rarity">Rarity</button>
                         <button class="sort-btn" data-sort="type">Type</button>
                     </div>
-                    <div class="sell-wrap">
-                        <button id="sell-junk-btn" onclick="toggleSellMenu()">🗑️ Sell Items</button>
-                        <div id="sell-menu" class="sell-menu hidden"></div>
-                    </div>
+                    <button id="sell-junk-btn" onclick="toggleSellMenu()">🗑️ Sell Items</button>
                 </div>
                 <div id="inv-list"></div>
             </div>
@@ -149,6 +146,10 @@
                 </div>
             </div>
         </div>
+    <!-- Sell bottom sheet (fixed overlay, outside scroll containers) -->
+    <div id="sell-overlay" class="sell-overlay hidden" onclick="closeSellMenu()">
+        <div id="sell-menu" class="sell-sheet" onclick="event.stopPropagation()"></div>
+    </div>
     </div>
 
     <script src="js/data.js"></script>

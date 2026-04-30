@@ -349,20 +349,19 @@ const RARITY_SELL_ORDER = ['common', 'uncommon', 'rare', 'epic'];
 const SELL_MULTS = { common: 2, uncommon: 6, rare: 18, epic: 50 };
 
 function toggleSellMenu() {
-    const menu = document.getElementById('sell-menu');
-    if (menu.classList.contains('hidden')) {
+    const overlay = document.getElementById('sell-overlay');
+    if (overlay.classList.contains('hidden')) {
         buildSellMenu();
-        menu.classList.remove('hidden');
-        setTimeout(() => document.addEventListener('click', closeSellMenuOutside, { once: true }), 0);
+        overlay.classList.remove('hidden');
     } else {
-        menu.classList.add('hidden');
+        overlay.classList.add('hidden');
     }
 }
 
 function buildSellMenu() {
-    const menu = document.getElementById('sell-menu');
-    const inv  = state.player.inventory;
-    let html   = '<div class="sell-menu-title">Sell items up to rarity…</div>';
+    const sheet  = document.getElementById('sell-menu');
+    const inv    = state.player.inventory;
+    let html     = '<div class="sell-handle"></div><div class="sell-menu-title">Sell items up to rarity…</div>';
     let cumItems = 0, cumGold = 0;
 
     for (const rarity of RARITY_SELL_ORDER) {
@@ -372,16 +371,15 @@ function buildSellMenu() {
         cumGold  += gold;
         const col      = RARITIES[rarity].color;
         const disabled = cumItems === 0 ? 'disabled' : '';
-        const label    = RARITIES[rarity].label;
         html +=
             `<button class="sell-option" ${disabled} onclick="sellUpTo('${rarity}')" style="border-color:${col}33">` +
-                `<span class="sell-rarity" style="color:${col}">${label}</span>` +
+                `<span class="sell-rarity" style="color:${col}">${RARITIES[rarity].label}</span>` +
                 `<span class="sell-info">${cumItems} item${cumItems !== 1 ? 's' : ''} · +${cumGold}💰</span>` +
             `</button>`;
     }
 
     html += '<button class="sell-cancel" onclick="closeSellMenu()">Cancel</button>';
-    menu.innerHTML = html;
+    sheet.innerHTML = html;
 }
 
 function sellUpTo(maxRarity) {
@@ -397,13 +395,7 @@ function sellUpTo(maxRarity) {
 }
 
 function closeSellMenu() {
-    document.getElementById('sell-menu')?.classList.add('hidden');
-}
-
-function closeSellMenuOutside(e) {
-    const menu = document.getElementById('sell-menu');
-    const btn  = document.getElementById('sell-junk-btn');
-    if (!menu?.contains(e.target) && e.target !== btn) closeSellMenu();
+    document.getElementById('sell-overlay')?.classList.add('hidden');
 }
 
 function setSortMode(mode) {
