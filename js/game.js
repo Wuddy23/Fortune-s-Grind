@@ -478,7 +478,8 @@ function gainXP(amount) {
 // ─── Dungeon ─────────────────────────────────────────────────────────────────
 
 function floorDescendCost(floor) {
-    return Math.floor(floor * floor / 2 + floor * 10);
+    // Quadratic base keeps early floors cheap; cubic term makes deep floors significantly steeper
+    return Math.floor(floor * floor / 2 + floor * 10 + Math.pow(floor, 3) / 25);
 }
 
 function advanceFloor() {
