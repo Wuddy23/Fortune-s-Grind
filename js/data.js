@@ -178,6 +178,18 @@ const STORE_ITEMS = [
     }
 ];
 
+// Elemental weapon effects (assigned to rare+ weapons)
+const ELEMENTS = {
+    poison: { key: 'poison', emoji: '🍃', label: 'Poison', color: '#2ecc71',
+               desc: '40% chance on hit: poisons enemy (4% HP/s for 5s)' },
+    fire:   { key: 'fire',   emoji: '🔥', label: 'Fire',   color: '#ff6600',
+               desc: '+25% ATK bonus fire damage on every hit' },
+    wind:   { key: 'wind',   emoji: '🌪️',  label: 'Wind',   color: '#88ccff',
+               desc: '35% chance on hit: enemy 25% miss chance for 4s' },
+    water:  { key: 'water',  emoji: '💧', label: 'Water',  color: '#5599ff',
+               desc: '35% chance on hit: enemy deals −20% damage for 5s' },
+};
+
 // XP required to advance from level N (index N-1)
 const XP_TABLE = (() => {
     const t = [];

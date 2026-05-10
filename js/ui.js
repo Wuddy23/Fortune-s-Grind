@@ -99,9 +99,12 @@ function updateEquipment() {
         const slotEl  = document.querySelector(`.equip-slot[data-slot="${slot}"]`);
 
         if (item) {
-            nameEl.textContent  = item.name;
-            nameEl.style.color  = RARITIES[item.rarity].color;
-            statsEl.textContent = fmtStats(item.stats);
+            nameEl.textContent = item.name;
+            nameEl.style.color = RARITIES[item.rarity].color;
+            const elStr = (item.element && ELEMENTS[item.element])
+                ? ` <span style="color:${ELEMENTS[item.element].color}">${ELEMENTS[item.element].emoji}</span>`
+                : '';
+            statsEl.innerHTML = fmtStats(item.stats) + elStr;
             slotEl.classList.add('has-item');
         } else {
             nameEl.textContent  = 'Empty';
@@ -138,16 +141,19 @@ function updateInventory() {
         const equipped   = state.player.equipment[item.typeKey];
         const upgrade    = isUpgrade(item, equipped);
         const sellGold   = Math.max(1, Math.floor(item.floor * SELL_MULTS[item.rarity]));
+        const el         = item.element && ELEMENTS[item.element];
         const div        = document.createElement('div');
         div.className    = `inv-item rarity-border-${item.rarity}`;
         div.innerHTML    =
             `<div class="inv-item-head">` +
                 `<span class="inv-icon">${GEAR_TYPES[item.typeKey].icon}</span>` +
                 `<span class="inv-name" style="color:${RARITIES[item.rarity].color}">${item.name}</span>` +
+                (el ? `<span class="elem-badge elem-${item.element}">${el.emoji} ${el.label}</span>` : '') +
                 `<span class="inv-badge badge-${item.rarity}">${RARITIES[item.rarity].label}</span>` +
                 (upgrade ? `<span class="upgrade-tag">▲UP</span>` : '') +
             `</div>` +
             `<div class="inv-stats">${fmtStats(item.stats)}</div>` +
+            (el ? `<div class="inv-element-desc" style="color:${el.color}">${el.emoji} ${el.desc}</div>` : '') +
             `<div class="inv-floor">Dropped on floor ${item.floor}</div>` +
             `<div class="inv-item-actions">` +
                 `<button class="equip-btn" data-id="${item.id}">Equip</button>` +
@@ -202,8 +208,20 @@ function updateDungeon() {
         setEl('d-monster-hp',   `${m.hp} / ${m.maxHp}`);
         setEl('d-monster-atk',  m.attack);
         setEl('d-monster-def',  m.defense);
+        // Show active elemental debuffs on monster
+        const debuffEl = document.getElementById('d-monster-debuffs');
+        if (debuffEl) {
+            const tags = [];
+            if (m.windDebuff  && m.windDebuff.timeLeft  > 0) tags.push(`<span style="color:#88ccff">🌪️ Disoriented ${Math.ceil(m.windDebuff.timeLeft)}s</span>`);
+            if (m.waterDebuff && m.waterDebuff.timeLeft > 0) tags.push(`<span style="color:#5599ff">💧 Chilled ${Math.ceil(m.waterDebuff.timeLeft)}s</span>`);
+            if (state.buffs.poison.active)                   tags.push(`<span style="color:#2ecc71">🍃 Poisoned ${Math.ceil(state.buffs.poison.timeLeft)}s</span>`);
+            debuffEl.innerHTML = tags.join(' ');
+            debuffEl.style.display = tags.length ? '' : 'none';
+        }
     } else {
         ['d-monster-name','d-monster-hp','d-monster-atk','d-monster-def'].forEach(id => setEl(id, '—'));
+        const debuffEl = document.getElementById('d-monster-debuffs');
+        if (debuffEl) debuffEl.style.display = 'none';
     }
 }
 

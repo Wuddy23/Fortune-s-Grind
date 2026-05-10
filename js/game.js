@@ -176,6 +176,14 @@ function updateCombat(dt) {
         }
     }
 
+    // Tick elemental debuffs on the current monster
+    if (state.monster) {
+        const wd = state.monster.windDebuff;
+        if (wd) { wd.timeLeft -= dt; if (wd.timeLeft <= 0) state.monster.windDebuff = null; }
+        const wt = state.monster.waterDebuff;
+        if (wt) { wt.timeLeft -= dt; if (wt.timeLeft <= 0) state.monster.waterDebuff = null; }
+    }
+
     c.playerTimer -= dt;
     if (c.playerTimer <= 0) {
         c.playerTimer = 1 / state.player.speed;
@@ -210,7 +218,50 @@ function doPlayerAttack() {
     if (isCrit) addLog(`⚡ CRIT! You strike ${m.type.name} for ${dmg}!`, 'crit');
     else        addLog(`You attack ${m.type.name} for ${dmg}.`, 'player');
 
-    if (m.hp <= 0) killMonster();
+    if (m.hp <= 0) { killMonster(); return; }
+
+    // Weapon elemental effect (only procs if monster survived the base hit)
+    const weapon = p.equipment.weapon;
+    if (weapon && weapon.element) applyWeaponElement(weapon.element);
+}
+
+function applyWeaponElement(element) {
+    const m = state.monster;
+    if (!m || m.hp <= 0) return;
+
+    switch (element) {
+        case 'poison':
+            if (Math.random() < 0.40) {
+                state.buffs.poison.active    = true;
+                state.buffs.poison.timeLeft  = Math.max(state.buffs.poison.timeLeft || 0, 5);
+                if (state.buffs.poison.tickTimer <= 0) state.buffs.poison.tickTimer = 0;
+                addLog('🍃 Weapon venom seeps in — enemy poisoned!', 'crit');
+            }
+            break;
+        case 'fire': {
+            const fireDmg = Math.max(1, Math.floor(state.player.attack * 0.25));
+            m.hp = Math.max(0, m.hp - fireDmg);
+            state.anim.monsterHit = 0.8;
+            spawnFloat(0.76, 0.44, `-${fireDmg}🔥`, '#ff6600');
+            addLog(`🔥 Flame surge! +${fireDmg} fire damage`, 'crit');
+            if (m.hp <= 0) killMonster();
+            break;
+        }
+        case 'wind':
+            if (Math.random() < 0.35) {
+                if (!m.windDebuff) m.windDebuff = {};
+                m.windDebuff.timeLeft = 4;
+                addLog('🌪️ Wind blast! Enemy disoriented (25% miss for 4s)', 'crit');
+            }
+            break;
+        case 'water':
+            if (Math.random() < 0.35) {
+                if (!m.waterDebuff) m.waterDebuff = {};
+                m.waterDebuff.timeLeft = 5;
+                addLog('💧 Chill strike! Enemy weakened (−20% dmg for 5s)', 'crit');
+            }
+            break;
+    }
 }
 
 function doMonsterAttack() {
@@ -218,8 +269,21 @@ function doMonsterAttack() {
     const m = state.monster;
     if (!m) return;
 
+    // Wind debuff: chance for monster to miss
+    if (m.windDebuff && m.windDebuff.timeLeft > 0 && Math.random() < 0.25) {
+        state.anim.monsterX = -10;
+        spawnFloat(0.22, 0.50, 'MISS!', '#88ccff');
+        addLog(`🌪️ ${m.type.name} swings wildly and misses!`, 'player');
+        return;
+    }
+
     let dmg = Math.max(1, Math.floor((m.attack - p.defense) * (0.8 + Math.random() * 0.4)));
     dmg = Math.max(1, dmg);
+
+    // Water debuff: reduce incoming damage by 20%
+    if (m.waterDebuff && m.waterDebuff.timeLeft > 0) {
+        dmg = Math.max(1, Math.floor(dmg * 0.80));
+    }
 
     p.hp = Math.max(0, p.hp - dmg);
     state.anim.monsterX = -18;
@@ -324,7 +388,13 @@ function generateGear(floor) {
             : Math.max(1, Math.floor(val));
     }
 
-    return { id: state.ui.nextId++, typeKey, name, rarity, stats, floor, timestamp: Date.now() };
+    // Assign elemental effect to rare+ weapons
+    const elKeys  = Object.keys(ELEMENTS);
+    const element = (typeKey === 'weapon' && ['rare', 'epic', 'legendary'].includes(rarity))
+        ? elKeys[Math.floor(Math.random() * elKeys.length)]
+        : null;
+
+    return { id: state.ui.nextId++, typeKey, name, rarity, stats, floor, timestamp: Date.now(), element };
 }
 
 function rollRarity(floor) {

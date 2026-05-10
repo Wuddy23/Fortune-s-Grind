@@ -445,6 +445,22 @@ body {
 
 .inv-stats { font-size: 0.7rem; color: var(--muted); }
 .inv-floor { font-size: 0.62rem; color: #40405a; margin-top: 2px; }
+.inv-element-desc { font-size: 0.62rem; margin-top: 2px; opacity: 0.85; }
+
+/* ─── ELEMENT BADGES ─── */
+.elem-badge {
+    font-size: 0.58rem;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-weight: 700;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.monster-debuffs { display: flex; gap: 6px; flex-wrap: wrap; font-size: 0.68rem; margin-top: 6px; }
+.elem-poison { background: #071a0e; color: #2ecc71; border: 1px solid #2ecc7144; }
+.elem-fire   { background: #1a0800; color: #ff6600; border: 1px solid #ff660044; }
+.elem-wind   { background: #00101a; color: #88ccff; border: 1px solid #88ccff44; }
+.elem-water  { background: #00081a; color: #5599ff; border: 1px solid #5599ff44; }
 
 .inv-item-actions {
     display: flex;
