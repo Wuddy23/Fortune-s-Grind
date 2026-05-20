@@ -254,7 +254,13 @@ function drawPlayer(x, y, sc) {
         B(-12,-16,3,6,gP); B(-12,-10,3,2,'#c07050');
     }
 
-    // ── WEAPON ──
+    // ── WEAPON (with swing animation) ──
+    const swingAngle = Math.sin((state.anim.weaponSwing || 0) * Math.PI) * 1.5;
+    const pivX = Math.round(10 * u), pivY = Math.round(-9 * u);
+    ctx.save();
+    ctx.translate(pivX, pivY);
+    ctx.rotate(swingAngle);
+    ctx.translate(-pivX, -pivY);
     if (wr >= 0) {
         const wP = RC[wr][0], wH = RC[wr][1];
         if (RC[wr][3]) { ctx.save(); ctx.shadowBlur=(wr>=4?16:9)*u; ctx.shadowColor=RC[wr][3]; }
@@ -270,6 +276,7 @@ function drawPlayer(x, y, sc) {
     } else {
         B(9,-12,3,2,'#c07050'); B(9,-10,3,3,gP);
     }
+    ctx.restore(); // undo weapon rotation
 
     // ── HELMET ──
     if (hr >= 0) {

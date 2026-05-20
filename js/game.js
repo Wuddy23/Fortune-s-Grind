@@ -21,7 +21,7 @@ function createState() {
             playerTimer: 0, monsterTimer: 0, log: [],
             paused: false, pauseTimer: 0, playerDead: false
         },
-        anim: { floats: [], playerHit: 0, monsterHit: 0, playerX: 0, monsterX: 0 },
+        anim: { floats: [], playerHit: 0, monsterHit: 0, playerX: 0, monsterX: 0, weaponSwing: 0 },
         ui:    { nextId: 1, sortMode: 'new', autosell: null },
         buffs: { strength: { active: false, timeLeft: 0 },
                  hpBoost:  { active: false, timeLeft: 0, bonus: 0 },
@@ -42,7 +42,8 @@ function initGame() {
             if (!state.player.timeAlive)   state.player.timeAlive = 0;
             if (!state.ui)                 state.ui = { nextId: 1000, sortMode: 'new', autosell: null };
             if (!('autosell' in state.ui)) state.ui.autosell = null;
-            if (!state.anim)               state.anim = { floats: [], playerHit: 0, monsterHit: 0, playerX: 0, monsterX: 0 };
+            if (!state.anim)               state.anim = { floats: [], playerHit: 0, monsterHit: 0, playerX: 0, monsterX: 0, weaponSwing: 0 };
+            if (!('weaponSwing' in state.anim)) state.anim.weaponSwing = 0;
             state.combat.paused = false;
             state.combat.playerDead = false;
             state.combat.pauseTimer = 0;
@@ -92,6 +93,7 @@ function updateCombat(dt) {
     anim.monsterHit = Math.max(0, anim.monsterHit - dt * 6);
     anim.playerX  += (-anim.playerX)  * Math.min(1, dt * 12);
     anim.monsterX += (-anim.monsterX) * Math.min(1, dt * 12);
+    anim.weaponSwing = Math.max(0, anim.weaponSwing - dt * 4); // 0.25s swing
     anim.floats = anim.floats.filter(f => {
         f.life -= dt;
         f.y    -= dt * 45;
@@ -211,8 +213,9 @@ function doPlayerAttack() {
     if (isCrit) dmg = Math.floor(dmg * p.critMult);
 
     m.hp = Math.max(0, m.hp - dmg);
-    state.anim.playerX  = 18;
+    state.anim.playerX    = 18;
     state.anim.monsterHit = 1;
+    state.anim.weaponSwing = 1.0;
     spawnFloat(0.74, 0.50, isCrit ? `💥${dmg}` : `-${dmg}`, isCrit ? '#f39c12' : '#ff6666');
 
     if (isCrit) addLog(`⚡ CRIT! You strike ${m.type.name} for ${dmg}!`, 'crit');
@@ -698,8 +701,9 @@ function doClickAttack() {
     const m   = state.monster;
     const dmg = state.player.attack;                   // 100% ATK, no defense reduction
     m.hp = Math.max(0, m.hp - dmg);
-    state.anim.monsterHit = 1;
-    state.anim.playerX    = 14;
+    state.anim.monsterHit  = 1;
+    state.anim.playerX     = 14;
+    state.anim.weaponSwing = 1.0;
     spawnFloat(0.74, 0.42, `👊${dmg}`, '#ffe066');
     addLog(`👊 You strike ${m.type.name} for ${dmg}!`, 'player');
     if (m.hp <= 0) killMonster();
